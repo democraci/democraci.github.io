@@ -1,4 +1,4 @@
 democraci.github.io
 ===================
 
-my technical blog
+my technical blog, now i am gonna push something.
