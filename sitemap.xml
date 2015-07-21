@@ -1,6 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://democraci.github.io/blog/2015/07/07/cyclomatic_complexity/</loc>
+    <lastmod>2015-07-07T15:59:00+08:00</lastmod>
+  </url>
+  <url>
+    <loc>http://democraci.github.io/blog/2015/07/07/java_memory_model/</loc>
+    <lastmod>2015-07-07T07:59:00+08:00</lastmod>
+  </url>
+  <url>
+    <loc>http://democraci.github.io/blog/2015/07/07/api_best_practice/</loc>
+    <lastmod>2015-07-07T05:59:00+08:00</lastmod>
+  </url>
+  <url>
+    <loc>http://democraci.github.io/blog/2015/07/07/README/</loc>
+    <lastmod>2015-07-07T00:00:00+08:00</lastmod>
+  </url>
+  <url>
+    <loc>http://democraci.github.io/blog/2011/07/10/ruby_style_guide_interprete/</loc>
+    <lastmod>2011-07-10T11:59:00+08:00</lastmod>
+  </url>
+  <url>
+    <loc>http://democraci.github.io/blog/2011/07/08/interrupt/</loc>
+    <lastmod>2011-07-08T13:44:00+08:00</lastmod>
+  </url>
+  <url>
+    <loc>http://democraci.github.io/blog/2011/07/07/should_private_protected_methods_be_under_unit_test/</loc>
+    <lastmod>2011-07-07T12:59:00+08:00</lastmod>
+  </url>
+  <url>
+    <loc>http://democraci.github.io/blog/2011/07/07/microservices_introduce/</loc>
+    <lastmod>2011-07-07T10:59:00+08:00</lastmod>
+  </url>
+  <url>
     <loc>http://democraci.github.io/blog/archives/</loc>
   </url>
   <url>

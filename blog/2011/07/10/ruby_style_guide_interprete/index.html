@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Democraci's Tech Blog</title>
+  <title>Ruby代码规范 - Democraci's Tech Blog</title>
   <meta name="author" content="Democraci">
 
   
-  <meta name="description" content="&nbsp;&nbsp;Cyclomatic Complexity(CC)和ABC是一些对代码衡量的指标.在这些指标出现之前,人们通常使用LoC(代码行数),方法平均行数等一些粗糙的指标去衡量代码. &nbsp;&nbsp;为什么需要这些指标? 在评价一个程序一个方法好坏复杂时, &hellip;">
+  <meta name="description" content="引言 &nbsp;&nbsp;最近一直在看Clean Code,关注整洁代码编写方面的实践.之前组里有推广Rubocop,也一直在强调Ruby代码要合乎规范.我在github上找到了他们内部styleguide,地址可戳https://github.com/styleguide. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://democraci.github.io/">
+  <link rel="canonical" href="http://democraci.github.io/blog/2011/07/10/ruby_style_guide_interprete/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Democraci's Tech Blog" type="application/atom+xml">
@@ -63,419 +63,12 @@
 </nav>
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2015/07/07/cyclomatic_complexity/">Introduction to Cyclomatic Complexity and ABC</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-07-07T15:59:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>3:59 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&nbsp;&nbsp;Cyclomatic Complexity(CC)和ABC是一些对代码衡量的指标.在这些指标出现之前,人们通常使用LoC(代码行数),方法平均行数等一些粗糙的指标去衡量代码.  <br/>
-&nbsp;&nbsp;为什么需要这些指标? 在评价一个程序一个方法好坏复杂时,最笨得方法是人工检查代码, 获得一个对程序的大致认识.但是使用人工检查太耗费时间对复杂的程序也无能无力, 如果我们能定义一些可以使用机器分析出来的可靠指标,揭示程序特征,那想必是极好的,对于一切都希望有个衡量数字的人,也能带来极大的安全感. <br/>
-&nbsp;&nbsp;事实上,这些指标不是绝对的衡量指数,它们揭示出来的, 是程序的大概特征.如果要在这些指标的指导下查探修改程序中存在的问题,还需要大量的人工介入, 去确定是否真的存在问题真的有必要修改问题.不应该被这些指标驱使着去编程,让自己的程序指标得分高有时是好事, 但就像用代码行数衡量程序员生产率一样,唯指标论则完全脱离了这些发明这些指标的初衷.指标应该是诊断程序的帮助工具, 而不是最终目的.</p>
-
-<h2>Cyclomatic Complexity定义</h2>
-
-<p>&nbsp;&nbsp;Cyclomatic Complexity(CC)是一个衡量程序复杂度的指标,详细的定义可以参见<a href="https://en.wikipedia.org/wiki/Cyclomatic_complexity">维基百科</a>.简单地说, 对于每个方法, 从方法入口(调用), 到方法出口(return返回), 有多条可能执行路径, 这些路径组成一个控制流图,CC就是基于这个图计算的统计指标.对于一个方法,每个statement都是图中的一个点, 如果一个statement可能六成转向另外一个statement, 那么它们之间就会有一条边.   <br/>
-&nbsp;&nbsp;下面使用一个抄袭的例子来讲解一些CC的具体计算, 计算如下Ruby方法的CC:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">cyclomatic_complexity_of_two</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
-</span><span class='line'>  <span class="k">if</span> <span class="n">arg</span>        <span class="c1"># Node A</span>
-</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Foo&quot;</span>  <span class="c1"># Node B</span>
-</span><span class='line'>  <span class="k">else</span>
-</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Bar&quot;</span>  <span class="c1"># Node C</span>
-</span><span class='line'>  <span class="k">end</span>
-</span><span class='line'><span class="k">end</span>             <span class="c1"># Node D</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&nbsp;&nbsp;对于上面方法, 可能的流程转向有: <code>A -&gt; B, B -&gt; D, A -&gt; C, C -&gt; D, D -&gt; entrypoint</code>, 画出来的控制流图如下:<img src="http://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2012/12/control_flow_graph.png" alt="control_flow_graph" />  <br/>
-&nbsp;&nbsp;依据上图, 有计算公式<code>CC = Edges - Nodes + Endpoints</code>, 计算出的结果就是 5-4 +1 = 2.</p>
-
-<h2>Cyclomatic Complexity指标作用</h2>
-
-<p>&nbsp;&nbsp;从定义上可知,CC揭示了一个方法内部可能的执行路径.CC越高, 说明方法越复杂, 内部可能执行路径越多, 测试起来越困难.如果一个方法内部控制语句比较多的话, 这个时候CC得分相对会高一点,此时要本能的嗅到code smell. 对于多高的CC是不正常, 目前没有明确的标准.</p>
-
-<h2>Ruby中Cyclomatic Complexity的测量</h2>
-
-<p>&nbsp;&nbsp;一般使用Saikuro,官网<a href="http://saikuro.rubyforge.org/">戳此</a>.Saikuro使用BSD License,在计算CC时, 把所有<code>if, unless, while, until, for, elsif, when</code>以及<code>block</code>都当做程序控制流分支.
-&nbsp;&nbsp;Saikuro可以指定CC数值在多少以上时给出Warning和Error, 这俩个基准值如果有相关经验和理论支持,定制可能更符合项目组中实际情况.
-&nbsp;&nbsp;Saikuro目前还是每次人工跑命令获取CC结果, 如果能够和CI集成,在每次代码提交后,计算CC并给与开发者反馈, 则是极好的.</p>
-
-<h2>ABC的定义</h2>
-
-<p>&nbsp;&nbsp;ABC也是一个度量代码复杂度的指标, 虽然这个指标原本发明出来是为了度量软件大小的.ABC的计算涉及到程序中三个方面.
-*  赋值(Assignment, A): 将值赋予给变量, 例如<code>=, /=, +=, &amp;=</code>等
-*  分支(Branch, B): 程序分支, <code>if else switch</code>等等
-*  方法调用(Call,C): 方法调用,将执行流从当前scope转移了.</p>
-
-<p>ABC是上述三个数的平方和的开平方, <code>ABC = sqrt((A*A) + (B*B) + (C*C))</code></p>
-
-<h2>ABC指标作用</h2>
-
-<p>&nbsp;&nbsp;ABC代表了代码复杂度, 一个方法ABC得分越高, 则方法越复杂, 就有可能需要进行refactor.</p>
-
-<h2>Ruby中ABC的测量</h2>
-
-<p>&nbsp;&nbsp;一般使用flog, github地址<a href="https://github.com/seattlerb/flog">戳此</a>. flog的安装和使用都比较简单,它会计算出每个方法的ABC指数,并默认输出ABC指数前60%的方法.
-&nbsp;&nbsp;值得一提的是, flog计算ABC采取的标准非常主观,和标准的ABC定义不太一样, 可以说是为Ruby语言完全定制的ABC定义.flog中把<code>:and, :case, :if, :or, :rescue, :until, :when, :while</code>还有其他语句当做分支(Branch).所有赋值(Assignment)都得一分,方法调用(Call)则是将执行流从当前Scope中转移得方法调用.具体的计算过程可以直接阅读flog源码,大概1000行左右,非常精悍短小.
-&amp;&nbsp;&amp;&nbsp;对于flog中计算出来的方法ABC指数,Jake Scruggs给出了如下经验法则:   <br/>
-*  0-10: 无需做什么, 方法逻辑很简单
-*  11-21: Good
-*  21-40: 可能需要做一些refactor
-*  41-60:需要检查一下方法代码, 看看是否需要做refactor
-*  61-?: 只要有机会, 就应该做refactor</p>
-
-<h2>其它工具</h2>
-
-<p>&nbsp;&nbsp;<a href="http://www.zenspider.com/ZSS/Products/ParseTree/">PareseTree</a>是一个将Ruby方法/类转为Lisp中使用的S-expression,并可计算ABC指数的工具. <br/>
-&nbsp;&nbsp;<a href="http://pmd.sourceforge.net/">PMD</a>是一个探查源代码缺陷的强大工具.它可以查找Java/JavaScript/PLSQL/XML/XSL中的常见编程错误, 也可以用来探查Java/C/C++/PHP/Ruby/JavaScript/Scala/Go中的重复代码.</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/07/07/java_memory_model/">Java内存模型</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-07-07T07:59:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:59 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&nbsp;&nbsp;最近同事买了本书<em>七周七并发模型</em>, 我才知道七周七XX原来是个系列. 去年我曾经简单地翻看过<em>七周七语言</em>中的Io,Erlang, Prolog章节,书明显不是精通Java/C++大全那种事无巨细的风格, 内容更为浅显易懂,但各种不同语言背后设计思想的碰撞,对我却是极大的震撼.人是最容易囿于过去不思改变,越来越觉得大部分程序员,其实就是一台精密机器上的齿轮,只管做好自己的事情,很少能跳出来,看看其它部分其它人到底是怎么工作的, 这是个分工越来越细密的行业了.<em>七周七XX</em>系列就是一个简单易读的小梯子,踩着它,我们能越过分工和框架的小墙望见对岸那群忙忙碌碌的程序员到底是气宗的妖孽, 还是剑宗的魔徒.
-&nbsp;&nbsp;<em>七周七并发</em>第一章讲了Thread &amp; Lock, 对于第一天学习,布置了个作业,要求了解Java 内存模型,并有如下问题:
-*  关于初始化安全性,Java内存模型给出了怎样的保证?(把英文术语翻译成中文, 总感觉理解起来很别扭, initialization safety比之初始化安全性,要容易理解得多,外文小说也是,翻译过来总是少了股中国味,牛排用豆瓣酱搭配烧烤,感觉奇奇怪怪)
-*   什么是double check? 为什么说double check是反模式的?</p>
-
-<p>&nbsp;&nbsp;关于Java内存模型的参考资料在<a href="http://www.cs.umd.edu/~pugh/java/memoryModel/jsr-133-faq.html#conclusion">JSR 133(Java Memory Model)FAQ</a>中,内容主要以问答形式组织,想要深入了解的可以仔细读读.</p>
-
-<h2>什么是内存模型?</h2>
-
-<p>&nbsp;&nbsp;大部分多处理器计算机都是采取单内存的结构,各个处理器通过总线竞争访问内存.为了加快内存访问速度,每个处理器都有各自的cache.cache带来一个内存可见性的问题,一个处理器对内存的写, 可能不是立即对其它处理器可见,一个处理器的读,也不一定是最新数据.在处理器层面上,内存模型定义了某处理器写入内存对其它处理器可见, 以及其它处理器写入内存对本处理器可见的充分必要条件.  <br/>
-&nbsp;&nbsp;有些硬件中,采取的是强内存模型,即所有处理器所看见的任何内存值,都是最新的值;有些采取的是弱内存模型,需要一些特殊的指令(叫做内存屏障-memory barriers)将处理器cache中的值写入内存,才能让内存写入对其他处理器可见.  <br/>
-&nbsp;&nbsp;直观上来说,强内存模型更易于编程,但是结果却恰恰相反.强内存模型在某些特殊情境下也需要内存屏障指令,目前处理器设计都是更鼓励弱内存模型,因为保持cache一致性的成本更低,在多处理器和大内存时,更易于扩展.  <br/>
-&nbsp;&nbsp;对于内存模型来说,除了cache之外,还有一个重要的因素需要考虑-指令重排序.现今的CPU,为了加快指令执行速度,有各种各样的技术,例如流水线超流水线等等等,这些技术会打乱原本串行执行指令的顺序.在多线程时,其他线程看来,本线程有些指令的执行提前了.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Class</span> <span class="n">Reordering</span> <span class="o">{</span>
-</span><span class='line'>  <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">,</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">writer</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>    <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
-</span><span class='line'>    <span class="n">y</span> <span class="o">=</span> <span class="mi">2</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">reader</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">r1</span> <span class="o">=</span> <span class="n">y</span><span class="o">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">r2</span> <span class="o">=</span> <span class="n">x</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&nbsp;&nbsp;上述代码中,假如writer和reader在俩个线程中执行,对于reader线程来说,程序执行到r1 = 2时, 继续往下执行r2不一定等于1, 有可能是0.这是因为指令重排序的缘故,y = 2的指令可能在x = 1之前就执行了.  <br/>
-&nbsp;&nbsp;Java内存模型描述了多线程代码中什么行为是合法的,以及线程间是如何通过内存交互.Java提供了内置语言中的volatile, final, synchronized关键字支持,内存模型定义了这些关键字的行为,并保证正确synchronized的Java程序在所有处理器架构上都能正确运行.</p>
-
-<h2>除了Java,其他语言有内存模型么?</h2>
-
-<p>&nbsp;&nbsp;C/C++没有在语言内置对多线程的支持,因此也没有内存模型,对于多线程行为,更多地依赖于使用的库,编译器和平台.</p>
-
-<h2>JSR内存模型的具体内容?</h2>
-
-<p>&nbsp;&nbsp;在1997年之后, 人们渐渐发现Java旧内存模型中一些违反人们直觉容易造成bug的部分,因此提出了JSR 133,新内存模型的不同有兴趣的可以仔细研究, 这里不细述.值得一提的是新内存模型添加了对初始化安全性的保证.如果一个对象是正确构建出来的(即在构建时并没有指向它的引用创造出来),那么所有线程中,如果有该对象的引用,该对象的所有final属性,线程所见的都是构建好的值, 无需使用synchronized关键字.
-&nbsp;&nbsp;关于这点的例子可见Java String的实现,Java String对象内部使用三个属性保存状态, 一个是字符数组, 一个是offset:同数组头的偏离量,一个是字符串长度.这样的设计,使用String对象的子字符串可以和该对象共享内存,大大节省了内存使用.这个设计,肯定要求三个属性都是final的,否则子字符串轻易更改字符数组,一切都会乱套.在老的对象模型中, 由于初始化安全性没有保障,其它线程可能看见offset的值为0, 然后才变为4之类,一切都乱套了.
-&nbsp;&nbsp;Java中的synchronized关键字,用于获取一个互斥锁.但synchronized关键字背后做的事情,不仅仅限于获取锁, 还有
-*  当离开临界区,释放互斥锁时,会将cache中的值写入内存,因此此线程对内存的写入其他线程都立刻可见
-*  获取锁后,进入临界区前,所有cache都会失效,变量的值都要存内存中重新读取.</p>
-
-<p>&nbsp;&nbsp;对于volatile关键字,Java中保证所有对volatile属性读出的值都是最新的值,同时对于volatile属性的读写指令顺序也不受指令重排序影响.更进一步的说,非volatile属性的读写指令顺序也不一定受影响.对volatile属性的写入,会有释放锁时的效果,即所有cache的值会写入内存,而对volatile属性的读入,会让cache失效,从内存中读入值.如下代码显示了volatile的作用,感觉作用其实和锁差不多了.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">class</span> <span class="nc">VolatileExample</span> <span class="o">{</span>
-</span><span class='line'>  <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">volatile</span> <span class="kt">boolean</span> <span class="n">v</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">writer</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>    <span class="n">x</span> <span class="o">=</span> <span class="mi">42</span><span class="o">;</span>
-</span><span class='line'>    <span class="n">v</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">reader</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">v</span> <span class="o">==</span> <span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="c1">//uses x - guaranteed to see 42.</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&nbsp;&nbsp;Java内存模型在重排序的指令中保证了一个局部的有序.对于内存操作(读写一个变量, 获取锁, 释放锁), 和线程操作(线程start/join), 内存模型保证了某些操作确实如其在代码中顺序一样在其他操作之前发生(happen before), 即如果一个操作在代码中在其他操作之前,那么它会保证不受指令重排序影响,在其他操作之前运行,并且结果对其他操作可见.具体规则如下:
-*   在同一个线程中, 每个操作都happen before在其后的操作
-*   释放锁的操作肯定happen before获取锁操作
-*   对volatile属性的写入happen before对该属性的读
-*   对于线程来说, 这个线程的start()操作happen before所有线程内的执行代码
-*   对于线程来说,所有join()后的代码, 必须等待join的线程执行完毕.</p>
-
-<h2>什么是不正确的同步?</h2>
-
-<p>&nbsp;&nbsp;不正确是个抽象的词,具体来说,不正确的同步一般是有数据竞争.即
-*  有一个线程写入某个变量
-*  另外一个线程读入该变量
-*  读写的顺序没有使用同步来协调</p>
-
-<p>当你的代码中出现这种情况时,你就应该本能的感受到危险,采取措施了.</p>
-
-<h2>double check在Java中有用么?</h2>
-
-<p>&nbsp;&nbsp;double check是实现lazy initialization时,为了避免同步成本的一个技巧.代码如下:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">// double-checked-locking - don&#39;t do this!</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="n">Something</span> <span class="n">instance</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">public</span> <span class="n">Something</span> <span class="nf">getInstance</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">instance</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>    <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">instance</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
-</span><span class='line'>        <span class="n">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Something</span><span class="o">();</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="k">return</span> <span class="n">instance</span><span class="o">;</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&nbsp;&nbsp;这个技巧看起来很聪明, 但是在java中,却没有用.具体原因可见:<a href="http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html">Double-checked locking: Clever, but broken</a>, 还是推荐使用Initialization On Demand Holder技巧,更为简单易懂, 也是线程安全的,代码如下.</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">LazySomethingHolder</span> <span class="o">{</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">Something</span> <span class="n">something</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Something</span><span class="o">();</span>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="n">Something</span> <span class="nf">getInstance</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">return</span> <span class="n">LazySomethingHolder</span><span class="o">.</span><span class="na">something</span><span class="o">;</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&nbsp;&nbsp;java中编译器对静态属性的初始化,会保证对所有县城是可见和正确的.</p>
-
-<h2>为什么需要了解这些?</h2>
-
-<p>&nbsp;&nbsp;最大的理由就是多线程bug实在是太难复现和调试了,因此,与其出问题了再调试,不如学习足够多的知识,避免bug发生</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/07/07/api_best_practice/">Web Service API最佳实践</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-07-07T05:59:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:59 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&nbsp;&nbsp;在为公司开发Restful Web Service API中,根据我自己的经验, 还有网上的一些资料,总结出了一些best practice.</p>
-
-<h2>使用标准纯粹的Rest风格</h2>
-
-<p>&nbsp;&nbsp;对于什么是Rest风格的API, 大家可以参阅维基百科的定义,基本上讲得比较清楚.一般来说,推荐
-*  所有资源命名使用名词而非动词,更为具体的说, 应该使用复数名词.
-*  使用http method表示对资源的操作.同时各个http method中, GET是幂等的,也就是说,它不会对后台状态有影响.
-*  对于不是CRUD的操作,可以有如下做法:
-   1.  将该操作, 映射为资源的一个属性.比如如果对一个资源的active操作,可以实现成资源中的一个布尔型activated属性,通过PUT/PATCH方法更新资源时,即可更新该属性.这种实现方式,在操作无需参数时,比较方便.
-   2.  将操作当成资源的一个子资源.操作本质上也可以是一个资源.例如Github API中的<code>star a gist</code>操作,是县城了star:<code>PUT /gists/:id/star</code>, unstar:<code>DELETE /gists/:id/star</code>
-   3.  有时一些操作很难套成REST风格,例如search多种类型的资源操作,这个操作很难做成某个资源的action.此时<code>/search</code>更为合理,虽然search并不是一种资源.只要在文档中写明,并且从API用户的角度看不怪异,就行.
-*  在有层级关系的资源中使用嵌套资源url. 具体来说,就是使用<code>GET /cars/711/drivers/4</code>之类的嵌套url. 这个标准也不是绝对的,如果子资源的id在系统中是独一无二,那么为了更短更易读的url和更简单的实现, 有人推荐不使用嵌套的<a href="http://weblog.jamisbuck.org/2007/2/5/nesting-resources">操作</a>.</p>
-
-<h2>为结果集提供filter, sort, field selection, pagination功能</h2>
-
-<p>&nbsp;&nbsp;对于资源的index等操作,通常需要提供filter, sort, field selection, pagination等功能.这些功能的参数一般是作为url的查询参数.
-*  filter: 可以依据属性的值对结果集进行过滤.例如列出tickets资源时,我们只需要状态为open的资源, 这时就需要<code>GET /tickets?state=open</code>对结果集进行过滤.
-*  sort: 一般是提供一个通用的<code>sort</code>参数,该参数接收一个以<code>,</code>分隔的列表,依据列表中的属性对结果集进行排序.
-   - <code>GET /tickets?sort=-priority</code>: 对结果集按priority降序排序
-   - <code>GET /tickets?sort=-pripority, created_at</code>: 对结果集按priority降序排序,相同priority的记录项, 按created_at降序排序.</p>
-
-<ul>
-<li>field selection:允许用户指定每个记录中包含哪些属性,能够有效的降低网络带宽,也能提高API的速度.<code>GET /tickets?fields=suject,date,location</code></li>
-<li>pagination: pagination在结果集非常大时是很有用的.分页一般使用offset+limit,或者page+per_page的方式.返回的结果集中, 应该告诉用户结果集的总记录数等信息.</li>
-</ul>
-
-
-<h2>好的文档最重要</h2>
-
-<p>&nbsp;&nbsp;一个API最重要的部分就是文档,文档是API用户最为依赖的工具.API的文档应该风格统一,便于用户查找,还需要有具体的API使用示例.
-&nbsp;&nbsp;更新不及时的文档不是好文档,API功能的更新,文档也要随之更新,并通过blog或者change log之类的手段及时通知用户.</p>
-
-<h2>指明版本</h2>
-
-<p>&nbsp;&nbsp;API总是应该有版本的,版本的好处是显而易见的.对于API版本是否应该在url中还是http header中指明这个问题, 学院派的看法是应该在http header中,但是把版本包含在url中有一个很实用的好处, 就是可以直接通过浏览器访问api url,调试时很直观.  <br/>
-&nbsp;&nbsp;有人推荐使用<a href="https://stripe.com/docs/api#versioning">Stripe API</a>式的版本控制.在url中指明大版本,在http header中使用一个字段指明了小版本.这样大版本不变就是API结构保持稳定, 小版本则是在有一些小的改动时进行变化.   <br/>
-&nbsp;&nbsp;API不会是一成不变的,因此对变动的管理就尤为重要.在deprecate一个API时,如果有良好的文档说明,提前足够久向客户打招呼,那么就不是难以接受的.</p>
-
-<h2>使用JSON</h2>
-
-<p>&nbsp;&nbsp;相比XML, JSON作为API的返回格式,有很多优点, 更容易解析, 更易于阅读, 更容易和大多数编程语言中的数据模型对应.XML最大的有点是可扩展性更好,但是对于Web Service API, JSON已经足够用了.关于这俩点的优缺点之争,整个业界已经开始用脚投票了,使用JSON的企业和用户越来越多, 而XML由于其复杂性,越来越少. <br/>
-&nbsp;&nbsp;对于返回Content-Type/接受数据的格式,永远都记得要在http header的Content-Type/Accept里指明</p>
-
-<h2>对返回数据pretty print并开启gzip</h2>
-
-<p>&nbsp;&nbsp;对返回数据pretty print的一个好处是极大的方便了调试.虽然pretty print可能会增大返回数据的大小,但在量级上来说,这个量一般不大(10%以下).gzip可以大大减少传输数据的量,因此节省带宽,twitter发现使用gzip后,他们的某些API中,带宽节省达到了80%.</p>
-
-<h2>Authentication</h2>
-
-<p>&nbsp;&nbsp;无论什么时候, 对API的访问都应该使用SSL.
-&nbsp;&nbsp;由于Restful API是无状态的,因此每次请求都应该携带鉴权信息.</p>
-
-<h2>Cache</h2>
-
-<h2>Rate limiting</h2>
-
-<h2>错误处理</h2>
-
-<p>&nbsp;&nbsp;错误处理是API中至关重要的一环.API的返回包括两个部分, 一个是http状态码,一个是消息体.返回http状态码要严格遵照http协议中的定义(200/300/400/500, 具体可参见相关文档). <br/>
-&nbsp;&nbsp;返回的错误消息体中, 需要有一个消息错误码指明错误类型, 还有一个消息正文指明具体错误消息.这些都需要在文档中详细说明.</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015/07/07/README/">Readme</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-07-07T00:00:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:00 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h1>democraci.github.io</h1>
-
-<p>This is a tech blog, which records thing I learned from my programming career</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/07/10/ruby_style_guide_interprete/">Ruby代码规范</a></h1>
+      <h1 class="entry-title">Ruby代码规范</h1>
     
     
       <p class="meta">
@@ -491,7 +84,7 @@
   </header>
 
 
-  <div class="entry-content"><h2>引言</h2>
+<div class="entry-content"><h2>引言</h2>
 
 <p>&nbsp;&nbsp;最近一直在看Clean Code,关注整洁代码编写方面的实践.之前组里有推广Rubocop,也一直在强调Ruby代码要合乎规范.我在github上找到了他们内部styleguide,地址可戳<a href="https://github.com/styleguide">https://github.com/styleguide</a>.Github在里面提供了他们内部开发时的CSS/JS/Ruby代码规范,上次公司邀请了外国友人来讲解CSS开发时需要避免的一些误区,我觉得参考这份CSS代码规范,应该会有更深刻的理解.<br/>
 &nbsp;&nbsp;闲话不多说,我们主要关注ruby的代码规范,github的ruby代码规范是来对ruby社区代码规范的一个精简,此代码规范可戳<a href="https://github.com/bbatsov/ruby-style-guide">https://github.com/bbatsov/ruby-style-guide</a>.Rubocop也是基于此代码规范实现的,这份规范被翻译成了多种语言,简体中文的版本可见<a href="https://github.com/JuanitoFatas/ruby-style-guide/blob/master/README-zhCN.md">link</a>.规范有点长,但我强烈建议大家通读一遍.我在通读的时候就发现了目前UI组内代码中一些不符合规范或者没有注意的地方,下面主要就摘抄出一些个人认为目前UI组内代码没有严格遵守的规范,并加了一点个人的理解,希望对大家有帮助.还是那句话,规范只有大家都去了解阅读,都去遵守,代码风格统一才有可能,没人了解实行的规范,即使再好,也发挥不了它的价值.<br/></p>
@@ -1973,254 +1566,48 @@ This work is licensed under a <a href="http://creativecommons.org/licenses/by/3.
 <p>共勉之，<br>
 <a href="https://twitter.com/bbatsov">Bozhidar</a></p>
 </div>
-  
-  
 
 
-    </article>
-  
-  
-    <article>
+  <footer>
+    <p class="meta">
       
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/07/08/interrupt/">关于中断的笔记</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2011-07-08T13:44:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>8</span><span class='date-suffix'>th</span>, <span class='date-year'>2011</span></span> <span class='time'>1:44 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h1>中断分类</h1>
-
-<h2>硬件中断</h2>
-
-<ul>
-<li>可屏蔽中断: 可通过CPU或中断控制器屏蔽控制器来屏蔽的中断</li>
-<li>非可屏蔽中断</li>
-</ul>
-
-
-<h2>软件中断</h2>
-
-<ul>
-<li>软件中断: 通过软件指令生成的中断, 与硬件中断相比, 软件中断为同步的方式.表现为CPU指令集中的一条指令, 通常用于陷入内核态中.</li>
-</ul>
-
-
-<h1>CPU的角度看中断</h1>
-
-<h2>硬件</h2>
-
-<p>CPU上有一个或多个引脚,这些引脚通过状态触发或边沿触发, 感知是否有中断发生. 不同的引脚可以分类为可屏蔽中断或屏蔽中断. CPU内部的寄存器, 也可以设置屏蔽位.</p>
-
-<ul>
-<li>状态触发: 维持在引脚线上维持高电平,通知cpu有中断发生, 直到cpu进行了中断处理,才将电平复位.</li>
-<li>边沿触发: 发送一个脉冲至cpu,通知cpu有中断发生, 这类中断容易丢失, 可以通过使用一个锁存器保寸历史中断.</li>
-</ul>
-
-
-<h2>软件</h2>
-
-<p>CPU每次执行一个指令前, 都会根据CPU引脚判断是否有中断发生.如果有中断发生,则不是取下一条指令,而是执行中断处理.中断处理首先保存当前执行现场, 然后通过中断向量找到对应的中断矢量表, 根据中断矢量表中设定的中断服务程序地址, 载入中断处理程序, 运行完成后, 恢复现场, 继续之前的处理.</p>
-
-<h3>中断处理过程</h3>
-
-<p>在实际运行中，一旦设备通过某引脚N向8259A发出中断指令，后者便向8086A的INTR引脚发送中断信号。8086A通过INTA引脚通知8259A中断有效（这个过程实际上还包括对此8259A的选址），后者即通过地址总线将对应引脚N的中断类型码（已预先存好，见上节）发送给CPU。CPU得到中断类型码后，先进行现场保护，主要包括：</p>
-
-<p>状态寄存器FLAGS压栈（同时堆栈寄存器SP-2）；
-关闭中断（将FLAGS寄存器的IF位置零）；
-将当前代码段寄存器CS和程序计数器IP压栈（同时堆栈寄存器SP-4）。
-现场保护完成后，CPU开始按照前述的两步骤翻译中断程序入口地址。在得到中断处理程序地址之后但调用中断处理程序之前，CPU会再检查一下NMI引脚是否有信号，以防在刚才的处理过程中忽略了可能的NMI中断。NMI的优先级始终高于INTR。</p>
-
-<p>中断处理程序虽然是由程序员编写，但须循一定规范。作为例程，中断处理程序应该先将各寄存器信息（除了IP和CS，此二寄存器现已指向当前中断程序）压入堆栈予以保存，这样才能在中断处理程序内部使用这些寄存器。在程序结束时，应该按与压栈保护时相反的顺序弹出各寄存器的值。中断程序的最后一句始终是IRET指令，这条指令将栈顶6个字节分别弹出并存入IP、CS和FLAGS寄存器，完成了现场的还原。</p>
-
-<h1>外设的角度看中断</h1>
-
-<p>外设在硬件上表现为数据缓冲区, 控制器, 物理部分, DMA. 软件上包括cpu指令, cpu内核驱动程序.</p>
-
-<h2>硬件</h2>
-
-<p>一个外设, 有一个控制器, 控制器接收cpu过来的指令,对外设进行相应操作.还有数据缓冲区, 相应的数据放在缓冲区中,在需要时传送到内核内存区或用户内存中.
-为了将CPU从内存和数据缓冲区的数据复制工作中解放开来, 出现了DMA.</p>
-
-<h2>软件</h2>
-
-<p>CPU操作外设的指令. 指令中对控制器上寄存器的抽象, 可以直接通过内存访问, 也可以采用专用的通道.</p>
-
-<p>CPU发起一个外设操作,即是发送指令.然后, CPU可以    <br/>
--   轮询
--   去忙其他的事情, 等待中断</p>
-</div>
-  
   
 
+<span class="byline author vcard">Posted by <span class="fn">Democraci</span></span>
 
-    </article>
-  
-  
-    <article>
       
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/07/07/should_private_protected_methods_be_under_unit_test/">单元测试是否应该测试私有/保护方法</a></h1>
-    
-    
-      <p class="meta">
-        
 
 
 
 
-<time class='entry-date' datetime='2011-07-07T12:59:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2011</span></span> <span class='time'>12:59 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&nbsp;&nbsp;前几日在写单元测试和同事有一番争论:是否应该测试private/protected方法?同事的意见是所有的方法都应该测试,这样能够确保代码覆盖率,在代码改动时只要跑跑case就能确保更改是否正确,心里更安稳.我则觉得,一把菜刀如果做成十斤重,那就丝毫没有使用价值了,如果为private/protected方法都加单元测试,那么测试代码必然急剧膨胀,编写维护测试代码的成本就足以耗死人了,得不偿失.  <br/>
-&nbsp;&nbsp;我无法说服同事,也感觉似乎无法说服自己,维护测试代码的成本虽然会很高,但仅仅这一个理由, 也不够充分.后来在stackoverflow上,我搜索到了一个关于此论题的<a href="http://stackoverflow.com/questions/5601730/should-private-protected-methods-be-under-unit-test">探讨</a>,一下子豁然开朗.  <br/>
-&nbsp;&nbsp;参与讨论的人,对此问题,一边倒的给出答案都是不应该测试private方法.具体的理由有:
-*   public方法是对象提供给外界的接口,private则是对外部隐藏的内部实现.外界只关心提供的接口是否正确,不关心它是怎么实现.只对public方法测试,就已经可以确保对象工作正常, 无需画蛇添足.
-*   对private方法测试, 就需要了解对象内部实现,额,测试代码和具体的实现有了强耦合.那么代码稍微的改动,测试代码的更改就会让人喝一大壶.
-*   如果case对代码的覆盖率不够,有些private/protected方法在跑case时没有被hit,要么是对public方法的测试不够充分,要么就是代码结构有问题, 不必为private方法添加case,缘木求鱼的提高覆盖率.</p>
-
-<p>&nbsp;&nbsp;除了这些理由,有人还给出一些形而上的原因.TDD其实从内里来说,是BDD, B是Behavior,所以我们其实测试的是行为, 而不是方法.在测试对象行为时, 暗含的就测试了private/protected方法.这个解释相当简单有力,但我很好奇为什么在讲解单元测试的时候,很少有人能将这个说法放在第一章.还有种说法,测试其实是使用对象的例子,因此只需测试public方法.</p>
-
-<p>&nbsp;&nbsp;protected方法是否应该被测试,则有小部分人给出yes,大部分人还是坚持不应该测试.反方的理由其实和private方法不应该测试一样,public方法已经包含了对象向外界暴露的行为,测试public方法就暗含的测试了protected方法,无需多此一举.正方则反驳说,其实protected方法也算是一种接口,是父类和子类的约定,自然值得测试. <br/>
-&nbsp;&nbsp;关于这个问题,我的答案是,只需要测试public方法,理由已在上面列出.如果测试覆盖率不够,我们更应该反思类是否太过庞大,承担了太多职责,以至于测试用例很难完全覆盖所有行为,或者private/protected/public权限设计的不够正确,public方法不符合单一职责原则,做了太多事情,因此测试不友好.坚持只测试public方法, 从编写测试代码的难易程度,也能够相当方面的反应程序设计是否合理.</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
+<time class='entry-date' datetime='2011-07-10T11:59:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2011</span></span> <span class='time'>11:59 am</span></time>
       
-  <header>
+
+
+    </p>
     
-      <h1 class="entry-title"><a href="/blog/2011/07/07/microservices_introduce/">A Introduction to Microservices</a></h1>
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://democraci.github.io/blog/2011/07/10/ruby_style_guide_interprete/" data-via="" data-counturl="http://democraci.github.io/blog/2011/07/10/ruby_style_guide_interprete/" >Tweet</a>
+  
+  
+  
+</div>
+
     
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2011-07-07T10:59:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2011</span></span> <span class='time'>10:59 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>引言</h2>
-
-<p>&nbsp;&nbsp;在2015年的北京QCon上,我听了一个关于微服务(microservices)的演讲,&ldquo;API先行策略对企业的影响&rdquo;.主讲的哥们没有花时间讲解API相关的主题,全场都在布道微服务架构.之后我在<a href="http://http://microservices.io/">microservices.io</a>上找到了一篇Martin Fowler关于微服务的详细介绍文章, 有点体会,下面内容是我对这篇文章的一点体会,内容多有雷同.恰好UI目前有意向推动整个架构向微服务方向变化,希望能够对大家能够有所帮助.</p>
-
-<h2>一体化架构和微服务架构</h2>
-
-<p>&nbsp;&nbsp;微服务是近年来兴起的一个软件架构风格方面的名词,有很多公司软件架构在演化中其实最后都变成了微服务或类似微服务,这个名词的出现正好填补了这个指代空缺.我直接引用Martin Fowler的微服务定义如下: <br/></p>
-
-<blockquote><p>In short, the microservice architectural style [1] is an approach to developing a single application as a suite of small services, each running in its own process and communicating with lightweight mechanisms, often an HTTP resource API. These services are built around business capabilities and independently deployable by fully automated deployment machinery. There is a bare minimum of centralized management of these services, which may be written in different programming languages and use different data storage technologies.</p></blockquote>
-
-<p>&nbsp;&nbsp;定义中的关键词有<code>一个应用是多个小服务(a single application as a suite of small services)</code>, <code>轻量通信方式(lightweight communication mechanisms)</code>, <code>围绕业务需求构建(built around business capabilities
-)</code>, <code>独立部署(independently deployable)</code>,<code>去中心化管理(decentralize)</code>,<code>灵活地技术栈选择(use different programming languages and data storage technologies)</code>.<br />
-这些关键词很好地描绘了微服务架构的基本特征,关于这些关键字在微服务架构中得详细体现和带来的好处,下面会慢慢介绍.<br />
-相对于微服务架构的,是一体化架构(Monolithic architecture).这个架构最常见,一个应用就是一个开发单元.Martin Fowler的定义:<br/></p>
-
-<blockquote><p>a monolithic application built as a single unit. Enterprise Applications are often built in three main parts: a client-side user interface (consisting of HTML pages and javascript running in a browser on the user&rsquo;s machine) a database (consisting of many tables inserted into a common, and usually relational, database management system), and a server-side application. The server-side application will handle HTTP requests, execute domain logic, retrieve and update data from the database, and select and populate HTML views to be sent to the browser. This server-side application is a monolith - a single logical executable[2]. Any changes to the system involve building and deploying a new version of the server-side application.</p></blockquote>
-
-<p>&nbsp;&nbsp;注意到其中的关键词<code>单一的可执行单元(a single logical executable)</code>,相对于微服务的将应用拆分成多个小服务的实现,必然带来的问题就是引用中说到得,每个小改变都要重新编译部署整个应用.</p>
-
-<h2>微服务的特征</h2>
-
-<h3>组件与服务</h3>
-
-<p>&nbsp;&nbsp;人们心目中理想的软件开发是这样的,有很多像乐高积木一样的组件,编写应用就是简单地搭积木.在现实应用开发过程中,我们会将很多东西都抽成组件,整个应用是组件的组合.组件简单地来说,就是一个可以独立被替换/更新而不影响整个应用的单元</br>
-&nbsp;&nbsp;对于微服务来说,组件是一个个服务.每个服务运行在单独的进程上(不是绝对),服务之间通过远程调用通信.而在一体化架构中,应用是一个大进程,组件们在同一进程内存中.<br />
-&nbsp;&nbsp;比较一下一体化架构和微服务架构,一体化架构组件之间的调用, 成本比服务之间远程调用要低很多.但是组件的每次更新,都要求对整个应用进行重新编译部署,服务就不存在这个问题.理想情况下,组件之间的边界是应该足够清晰的,低耦合高内聚.但在一体化架构下,受累于很多语言并没有良好的<a href="http://martinfowler.com/bliki/PublishedInterface.html">公共接口</a>机制,随着时间的推移,很难维持组件间的边界,最终导致组件间依赖逐渐发生,一切越来越浆糊.微服务架构中,由于远程调用接口天然就是一个明确的边界,也是一个更清晰的接口,可以更容易维持组件之间的独立性.<br/>
-&nbsp;&nbsp;微服务架构中各服务之间的远程API一般比内存中直接调用的API要粗糙得多,因为远程调用成本高,为了压缩成本,API的粒度必然要更大<br/></p>
-
-<h3>机构组织</h3>
-
-<p>Conway法则是这样说的:<br/></p>
-
-<blockquote><p>Any organization that designs a system (defined broadly) will produce a design whose structure is a copy of the organization&rsquo;s communication structure.</p></blockquote>
-
-<p>&nbsp;&nbsp;基于这一法则,一般公司部门的划分,其实就是应用拆分的一个复本.例如UI组,数据库组,服务逻辑组.这带来的问题就是团队协作实在太多了,逻辑散布在各个部门中,小小的变更都会导致跨团队间协作.
-<br/>
-<img src="http://martinfowler.com/articles/microservices/images/conways-law.png" alt="image" /><br/>
-&nbsp;&nbsp;微服务架构中服务的组织是基于业务功能的,团队的划分也是基于服务的组织,每个团队负责各自服务的用户接口,持久化存储等各方面.因此团队是跨职能的,负责所有开发相关方面:项目管理,数据库,用户体验.因此变更带来的跨团队协作变得更少了.<br/>
-<img src="http://martinfowler.com/articles/microservices/images/PreferFunctionalStaffOrganization.png" alt="image" /><br/></p>
-
-<h3>产品不是项目</h3>
-
-<p>&nbsp;&nbsp;大多数应用开发都是采取项目模型:致力提供一个完整地软件,一旦开发完成,软件移交给维护部门,然后就没有开发团队的事情了.<br/>
-&nbsp;&nbsp;微服务架构则尽力避免这种开发模型,一个团队应该管理一个产品的全生命周期.Amazon的理念是"you build, you run it",开发团队需要对线上的软件负担全部责任.开发者需要每天都了解线上软件的运行状况,并需要承担一些售后支持,与用户的联系也必然更紧密.开发者经常不关心"软件如何帮助用户强化他们的商业竞争力",这种做法能够让开发者更加关注用户,而不是埋头实现功能.<br/>
-&nbsp;&nbsp;当然在一体化架构中,也可以实现"you build, you run it".但是相比整个庞大应用,服务是更为细粒度的东西,更自然的在开发者和用户间构造联系.</p>
-
-<h3>强终端和弱管道</h3>
-
-<p>&nbsp;&nbsp;当构建跨进程间的通信架构时,很多产品和设计都会在通信机制中强加入很多东西,ESB(Enterprise Service Bus)就是一个例子,它包含了很多消息路由,编码,传输,业务规则等等机制.<br/>
-&nbsp;&nbsp;微服务架构则通常不这么做,而是强终端和弱管道.微服务架构在构造应用时,一个目标就是服务间依赖解耦,并高内聚,因此通信管道不能加入太多逻辑.这有点像Unix的风格,每个服务就是接受一系列输入,做处理,然后输出,简单地通信管道把这一切粘合起来,完成复杂的业务逻辑.<br/>
-&nbsp;&nbsp;微服务架构因此多使用建立在HTTP协议上的resource API(Restful API)或轻量级消息中间件.轻量级消息中间件一般就是实现了消息路由即可,甚至没有可靠的异步机制,一切都在终端处理.<br/>
-一体化架构中,组件都是在同一进程中,通信就是简单地方法调用.对于微服务架构来说,内存中的方法调用变成了RPC,由此带来了不可靠的问题,由此需要将原来粒度很细的调用,换成粗粒度的调用.</p>
-
-<h3>去中心化管理</h3>
-
-<p>&nbsp;&nbsp;在一体化架构中,中心化管理倾向于将技术标准化,解决问题的方案因此也就被限制了.但是对于不同的问题,各自有合适的技术解决方案.C++适合编写实时性能要求高的组件,Ruby适合快速网络应用开发.微服务架构将应用拆分成多个服务,每个服务因此可以采取适合的技术方案.例如,如果某个服务的实现需要采取PostgrelSQL的一个特性,那尽管去使用,对其他服务来说,此服务的内部实现是个黑盒,无需关心.一切都因此更为灵活了.</p>
-
-<h3>分散数据管理</h3>
-
-<p>&nbsp;&nbsp;一体化服务中,一个应用使用单一的数据库对数据进行持久化.但微服务架构中,每个服务团队都需要管理自己的数据库,无论是使用相同数据的同一实例,或者是使用不同的数据库系统.<br/>
-&nbsp;&nbsp;在管理数据更新时,经常使用数据库事务来保证一致性.但数据如果散布在多个数据库系统上,分布式事务管理系统不仅难以实现,而且成本很高.因此微服务架构强调服务之间的事务协调,一致性也只能是最终一致性,并通过补偿操作来问题出现时进行处理.<br/>
-&nbsp;&nbsp;选择这样处理一致性问题对很多开发团队来说是挑战,但这样做其实是一个常见业务实践模式.通常我们会允许一定的不一致性来保证快速响应性能,然后有一个进程专门处理错误.当业务上处理强一致性的消耗比处理错误消耗少时,这样做是值得的.</p>
-
-<h3>基础设施自动化</h3>
-
-<p>&nbsp;&nbsp;过去的几年中,基础设施自动化技术已经得到了长足发展,尤其是云的出现,使构建,发布,运维的复杂性大大降低.<br/>
-&nbsp;&nbsp;如果没有基础设施自动化技术支持,一个应用分成许许多多个微服务后,构建,测试,发布应用的成本必然高的不可想象.持集部署和持续集成,是目前自动化构建常用的技术.持集部署的一个目标在于让发布变得简单,无论一个还是十个.微服务架构必然更加依赖与基础设施自动化技术.</p>
-
-<h3>容错性设计</h3>
-
-<p>&nbsp;&nbsp;使用服务当做组件构建应用的一个影响就是,应用在设计时需要对服务出错时有一定的容错性.当任意一个服务因为某些原因fail时,需要对用户友好的报错.相比于一体化架构,微服务架构在这方面引入了额外的复杂性.微服务团队需要时时刻刻都考虑服务fail时对用户体验的影响.<br/>
-&nbsp;&nbsp;Netflix的Simian Army可以测试服务fail甚至数据中心fail时,整个应用的可恢复性以及监控是否发挥作用.这种测试一般就可以做到让大家都可以按时下班.由于服务在任何时候都有可能fail,因此快速地探测服务fail,并在可能时自动恢复就特别重要.微服务架构的应用需要投入很多精力在实时应用监控上,不仅检查架构方面实时情况(数据库每秒接收到多少请求),还要检查业务相关情况(例如有每分钟有多少订单).监控系统这样就可以在系统出错前提供预警,并通知开发团队跟进调查.<br/>
-&nbsp;&nbsp;微服务架构中一般需要对每个服务都有一个复杂的监控,并提供一个面板,再次面板上可以查看每个服务的各方面情况.</p>
-
-<h2>参考文献和其他相关链接</h2>
-
-<ul>
-<li>Microservices introduction by Martin Fowler:<a href="http://martinfowler.com/articles/microservices.html">link</a></li>
-<li>关于微服务架构的介绍官网:<a href="http://microservices.io">link</a></li>
-</ul>
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2011/07/08/interrupt/" title="Previous Post: 关于中断的笔记">&laquo; 关于中断的笔记</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2015/07/07/README/" title="Next Post: Readme">Readme &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
 
 </div>
-  
-  
 
-
-    </article>
-  
-  <div class="pagination">
-    
-    <a href="/blog/archives">Blog Archives</a>
-    
-  </div>
-</div>
 <aside class="sidebar">
   
     <section>
@@ -2256,6 +1643,7 @@ This work is licensed under a <a href="http://creativecommons.org/licenses/by/3.
 
   
 </aside>
+
 
     </div>
   </div>

@@ -1,16 +1,2005 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[My Octopress Blog]]></title>
+  <title><![CDATA[Democraci's Tech Blog]]></title>
   <link href="http://democraci.github.io/atom.xml" rel="self"/>
   <link href="http://democraci.github.io/"/>
-  <updated>2015-07-20T17:44:28+08:00</updated>
+  <updated>2015-07-21T10:46:44+08:00</updated>
   <id>http://democraci.github.io/</id>
   <author>
-    <name><![CDATA[Your Name]]></name>
+    <name><![CDATA[Democraci]]></name>
     
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Introduction to Cyclomatic Complexity and ABC]]></title>
+    <link href="http://democraci.github.io/blog/2015/07/07/cyclomatic_complexity/"/>
+    <updated>2015-07-07T15:59:00+08:00</updated>
+    <id>http://democraci.github.io/blog/2015/07/07/cyclomatic_complexity</id>
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;Cyclomatic Complexity(CC)和ABC是一些对代码衡量的指标.在这些指标出现之前,人们通常使用LoC(代码行数),方法平均行数等一些粗糙的指标去衡量代码.  <br/>
+&nbsp;&nbsp;为什么需要这些指标? 在评价一个程序一个方法好坏复杂时,最笨得方法是人工检查代码, 获得一个对程序的大致认识.但是使用人工检查太耗费时间对复杂的程序也无能无力, 如果我们能定义一些可以使用机器分析出来的可靠指标,揭示程序特征,那想必是极好的,对于一切都希望有个衡量数字的人,也能带来极大的安全感. <br/>
+&nbsp;&nbsp;事实上,这些指标不是绝对的衡量指数,它们揭示出来的, 是程序的大概特征.如果要在这些指标的指导下查探修改程序中存在的问题,还需要大量的人工介入, 去确定是否真的存在问题真的有必要修改问题.不应该被这些指标驱使着去编程,让自己的程序指标得分高有时是好事, 但就像用代码行数衡量程序员生产率一样,唯指标论则完全脱离了这些发明这些指标的初衷.指标应该是诊断程序的帮助工具, 而不是最终目的.</p>
+
+<h2>Cyclomatic Complexity定义</h2>
+
+<p>&nbsp;&nbsp;Cyclomatic Complexity(CC)是一个衡量程序复杂度的指标,详细的定义可以参见<a href="https://en.wikipedia.org/wiki/Cyclomatic_complexity">维基百科</a>.简单地说, 对于每个方法, 从方法入口(调用), 到方法出口(return返回), 有多条可能执行路径, 这些路径组成一个控制流图,CC就是基于这个图计算的统计指标.对于一个方法,每个statement都是图中的一个点, 如果一个statement可能六成转向另外一个statement, 那么它们之间就会有一条边.   <br/>
+&nbsp;&nbsp;下面使用一个抄袭的例子来讲解一些CC的具体计算, 计算如下Ruby方法的CC:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">cyclomatic_complexity_of_two</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="n">arg</span>        <span class="c1"># Node A</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Foo&quot;</span>  <span class="c1"># Node B</span>
+</span><span class='line'>  <span class="k">else</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Bar&quot;</span>  <span class="c1"># Node C</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>             <span class="c1"># Node D</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&nbsp;&nbsp;对于上面方法, 可能的流程转向有: <code>A -&gt; B, B -&gt; D, A -&gt; C, C -&gt; D, D -&gt; entrypoint</code>, 画出来的控制流图如下:<img src="http://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2012/12/control_flow_graph.png" alt="control_flow_graph" />  <br/>
+&nbsp;&nbsp;依据上图, 有计算公式<code>CC = Edges - Nodes + Endpoints</code>, 计算出的结果就是 5-4 +1 = 2.</p>
+
+<h2>Cyclomatic Complexity指标作用</h2>
+
+<p>&nbsp;&nbsp;从定义上可知,CC揭示了一个方法内部可能的执行路径.CC越高, 说明方法越复杂, 内部可能执行路径越多, 测试起来越困难.如果一个方法内部控制语句比较多的话, 这个时候CC得分相对会高一点,此时要本能的嗅到code smell. 对于多高的CC是不正常, 目前没有明确的标准.</p>
+
+<h2>Ruby中Cyclomatic Complexity的测量</h2>
+
+<p>&nbsp;&nbsp;一般使用Saikuro,官网<a href="http://saikuro.rubyforge.org/">戳此</a>.Saikuro使用BSD License,在计算CC时, 把所有<code>if, unless, while, until, for, elsif, when</code>以及<code>block</code>都当做程序控制流分支.
+&nbsp;&nbsp;Saikuro可以指定CC数值在多少以上时给出Warning和Error, 这俩个基准值如果有相关经验和理论支持,定制可能更符合项目组中实际情况.
+&nbsp;&nbsp;Saikuro目前还是每次人工跑命令获取CC结果, 如果能够和CI集成,在每次代码提交后,计算CC并给与开发者反馈, 则是极好的.</p>
+
+<h2>ABC的定义</h2>
+
+<p>&nbsp;&nbsp;ABC也是一个度量代码复杂度的指标, 虽然这个指标原本发明出来是为了度量软件大小的.ABC的计算涉及到程序中三个方面.
+*  赋值(Assignment, A): 将值赋予给变量, 例如<code>=, /=, +=, &amp;=</code>等
+*  分支(Branch, B): 程序分支, <code>if else switch</code>等等
+*  方法调用(Call,C): 方法调用,将执行流从当前scope转移了.</p>
+
+<p>ABC是上述三个数的平方和的开平方, <code>ABC = sqrt((A*A) + (B*B) + (C*C))</code></p>
+
+<h2>ABC指标作用</h2>
+
+<p>&nbsp;&nbsp;ABC代表了代码复杂度, 一个方法ABC得分越高, 则方法越复杂, 就有可能需要进行refactor.</p>
+
+<h2>Ruby中ABC的测量</h2>
+
+<p>&nbsp;&nbsp;一般使用flog, github地址<a href="https://github.com/seattlerb/flog">戳此</a>. flog的安装和使用都比较简单,它会计算出每个方法的ABC指数,并默认输出ABC指数前60%的方法.
+&nbsp;&nbsp;值得一提的是, flog计算ABC采取的标准非常主观,和标准的ABC定义不太一样, 可以说是为Ruby语言完全定制的ABC定义.flog中把<code>:and, :case, :if, :or, :rescue, :until, :when, :while</code>还有其他语句当做分支(Branch).所有赋值(Assignment)都得一分,方法调用(Call)则是将执行流从当前Scope中转移得方法调用.具体的计算过程可以直接阅读flog源码,大概1000行左右,非常精悍短小.
+&amp;&nbsp;&amp;&nbsp;对于flog中计算出来的方法ABC指数,Jake Scruggs给出了如下经验法则:   <br/>
+*  0-10: 无需做什么, 方法逻辑很简单
+*  11-21: Good
+*  21-40: 可能需要做一些refactor
+*  41-60:需要检查一下方法代码, 看看是否需要做refactor
+*  61-?: 只要有机会, 就应该做refactor</p>
+
+<h2>其它工具</h2>
+
+<p>&nbsp;&nbsp;<a href="http://www.zenspider.com/ZSS/Products/ParseTree/">PareseTree</a>是一个将Ruby方法/类转为Lisp中使用的S-expression,并可计算ABC指数的工具. <br/>
+&nbsp;&nbsp;<a href="http://pmd.sourceforge.net/">PMD</a>是一个探查源代码缺陷的强大工具.它可以查找Java/JavaScript/PLSQL/XML/XSL中的常见编程错误, 也可以用来探查Java/C/C++/PHP/Ruby/JavaScript/Scala/Go中的重复代码.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Java内存模型]]></title>
+    <link href="http://democraci.github.io/blog/2015/07/07/java_memory_model/"/>
+    <updated>2015-07-07T07:59:00+08:00</updated>
+    <id>http://democraci.github.io/blog/2015/07/07/java_memory_model</id>
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;最近同事买了本书<em>七周七并发模型</em>, 我才知道七周七XX原来是个系列. 去年我曾经简单地翻看过<em>七周七语言</em>中的Io,Erlang, Prolog章节,书明显不是精通Java/C++大全那种事无巨细的风格, 内容更为浅显易懂,但各种不同语言背后设计思想的碰撞,对我却是极大的震撼.人是最容易囿于过去不思改变,越来越觉得大部分程序员,其实就是一台精密机器上的齿轮,只管做好自己的事情,很少能跳出来,看看其它部分其它人到底是怎么工作的, 这是个分工越来越细密的行业了.<em>七周七XX</em>系列就是一个简单易读的小梯子,踩着它,我们能越过分工和框架的小墙望见对岸那群忙忙碌碌的程序员到底是气宗的妖孽, 还是剑宗的魔徒.
+&nbsp;&nbsp;<em>七周七并发</em>第一章讲了Thread &amp; Lock, 对于第一天学习,布置了个作业,要求了解Java 内存模型,并有如下问题:
+*  关于初始化安全性,Java内存模型给出了怎样的保证?(把英文术语翻译成中文, 总感觉理解起来很别扭, initialization safety比之初始化安全性,要容易理解得多,外文小说也是,翻译过来总是少了股中国味,牛排用豆瓣酱搭配烧烤,感觉奇奇怪怪)
+*   什么是double check? 为什么说double check是反模式的?</p>
+
+<p>&nbsp;&nbsp;关于Java内存模型的参考资料在<a href="http://www.cs.umd.edu/~pugh/java/memoryModel/jsr-133-faq.html#conclusion">JSR 133(Java Memory Model)FAQ</a>中,内容主要以问答形式组织,想要深入了解的可以仔细读读.</p>
+
+<h2>什么是内存模型?</h2>
+
+<p>&nbsp;&nbsp;大部分多处理器计算机都是采取单内存的结构,各个处理器通过总线竞争访问内存.为了加快内存访问速度,每个处理器都有各自的cache.cache带来一个内存可见性的问题,一个处理器对内存的写, 可能不是立即对其它处理器可见,一个处理器的读,也不一定是最新数据.在处理器层面上,内存模型定义了某处理器写入内存对其它处理器可见, 以及其它处理器写入内存对本处理器可见的充分必要条件.  <br/>
+&nbsp;&nbsp;有些硬件中,采取的是强内存模型,即所有处理器所看见的任何内存值,都是最新的值;有些采取的是弱内存模型,需要一些特殊的指令(叫做内存屏障-memory barriers)将处理器cache中的值写入内存,才能让内存写入对其他处理器可见.  <br/>
+&nbsp;&nbsp;直观上来说,强内存模型更易于编程,但是结果却恰恰相反.强内存模型在某些特殊情境下也需要内存屏障指令,目前处理器设计都是更鼓励弱内存模型,因为保持cache一致性的成本更低,在多处理器和大内存时,更易于扩展.  <br/>
+&nbsp;&nbsp;对于内存模型来说,除了cache之外,还有一个重要的因素需要考虑-指令重排序.现今的CPU,为了加快指令执行速度,有各种各样的技术,例如流水线超流水线等等等,这些技术会打乱原本串行执行指令的顺序.在多线程时,其他线程看来,本线程有些指令的执行提前了.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Class</span> <span class="n">Reordering</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">,</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">writer</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>    <span class="n">y</span> <span class="o">=</span> <span class="mi">2</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">reader</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">r1</span> <span class="o">=</span> <span class="n">y</span><span class="o">;</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">r2</span> <span class="o">=</span> <span class="n">x</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&nbsp;&nbsp;上述代码中,假如writer和reader在俩个线程中执行,对于reader线程来说,程序执行到r1 = 2时, 继续往下执行r2不一定等于1, 有可能是0.这是因为指令重排序的缘故,y = 2的指令可能在x = 1之前就执行了.  <br/>
+&nbsp;&nbsp;Java内存模型描述了多线程代码中什么行为是合法的,以及线程间是如何通过内存交互.Java提供了内置语言中的volatile, final, synchronized关键字支持,内存模型定义了这些关键字的行为,并保证正确synchronized的Java程序在所有处理器架构上都能正确运行.</p>
+
+<h2>除了Java,其他语言有内存模型么?</h2>
+
+<p>&nbsp;&nbsp;C/C++没有在语言内置对多线程的支持,因此也没有内存模型,对于多线程行为,更多地依赖于使用的库,编译器和平台.</p>
+
+<h2>JSR内存模型的具体内容?</h2>
+
+<p>&nbsp;&nbsp;在1997年之后, 人们渐渐发现Java旧内存模型中一些违反人们直觉容易造成bug的部分,因此提出了JSR 133,新内存模型的不同有兴趣的可以仔细研究, 这里不细述.值得一提的是新内存模型添加了对初始化安全性的保证.如果一个对象是正确构建出来的(即在构建时并没有指向它的引用创造出来),那么所有线程中,如果有该对象的引用,该对象的所有final属性,线程所见的都是构建好的值, 无需使用synchronized关键字.
+&nbsp;&nbsp;关于这点的例子可见Java String的实现,Java String对象内部使用三个属性保存状态, 一个是字符数组, 一个是offset:同数组头的偏离量,一个是字符串长度.这样的设计,使用String对象的子字符串可以和该对象共享内存,大大节省了内存使用.这个设计,肯定要求三个属性都是final的,否则子字符串轻易更改字符数组,一切都会乱套.在老的对象模型中, 由于初始化安全性没有保障,其它线程可能看见offset的值为0, 然后才变为4之类,一切都乱套了.
+&nbsp;&nbsp;Java中的synchronized关键字,用于获取一个互斥锁.但synchronized关键字背后做的事情,不仅仅限于获取锁, 还有
+*  当离开临界区,释放互斥锁时,会将cache中的值写入内存,因此此线程对内存的写入其他线程都立刻可见
+*  获取锁后,进入临界区前,所有cache都会失效,变量的值都要存内存中重新读取.</p>
+
+<p>&nbsp;&nbsp;对于volatile关键字,Java中保证所有对volatile属性读出的值都是最新的值,同时对于volatile属性的读写指令顺序也不受指令重排序影响.更进一步的说,非volatile属性的读写指令顺序也不一定受影响.对volatile属性的写入,会有释放锁时的效果,即所有cache的值会写入内存,而对volatile属性的读入,会让cache失效,从内存中读入值.如下代码显示了volatile的作用,感觉作用其实和锁差不多了.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">class</span> <span class="nc">VolatileExample</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">volatile</span> <span class="kt">boolean</span> <span class="n">v</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">writer</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">x</span> <span class="o">=</span> <span class="mi">42</span><span class="o">;</span>
+</span><span class='line'>    <span class="n">v</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">reader</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">v</span> <span class="o">==</span> <span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//uses x - guaranteed to see 42.</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&nbsp;&nbsp;Java内存模型在重排序的指令中保证了一个局部的有序.对于内存操作(读写一个变量, 获取锁, 释放锁), 和线程操作(线程start/join), 内存模型保证了某些操作确实如其在代码中顺序一样在其他操作之前发生(happen before), 即如果一个操作在代码中在其他操作之前,那么它会保证不受指令重排序影响,在其他操作之前运行,并且结果对其他操作可见.具体规则如下:
+*   在同一个线程中, 每个操作都happen before在其后的操作
+*   释放锁的操作肯定happen before获取锁操作
+*   对volatile属性的写入happen before对该属性的读
+*   对于线程来说, 这个线程的start()操作happen before所有线程内的执行代码
+*   对于线程来说,所有join()后的代码, 必须等待join的线程执行完毕.</p>
+
+<h2>什么是不正确的同步?</h2>
+
+<p>&nbsp;&nbsp;不正确是个抽象的词,具体来说,不正确的同步一般是有数据竞争.即
+*  有一个线程写入某个变量
+*  另外一个线程读入该变量
+*  读写的顺序没有使用同步来协调</p>
+
+<p>当你的代码中出现这种情况时,你就应该本能的感受到危险,采取措施了.</p>
+
+<h2>double check在Java中有用么?</h2>
+
+<p>&nbsp;&nbsp;double check是实现lazy initialization时,为了避免同步成本的一个技巧.代码如下:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">// double-checked-locking - don&#39;t do this!</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="n">Something</span> <span class="n">instance</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">Something</span> <span class="nf">getInstance</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">instance</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">instance</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span>
+</span><span class='line'>        <span class="n">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Something</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="n">instance</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&nbsp;&nbsp;这个技巧看起来很聪明, 但是在java中,却没有用.具体原因可见:<a href="http://www.javaworld.com/article/2074979/java-concurrency/double-checked-locking--clever--but-broken.html">Double-checked locking: Clever, but broken</a>, 还是推荐使用Initialization On Demand Holder技巧,更为简单易懂, 也是线程安全的,代码如下.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">LazySomethingHolder</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">Something</span> <span class="n">something</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Something</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="n">Something</span> <span class="nf">getInstance</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="n">LazySomethingHolder</span><span class="o">.</span><span class="na">something</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&nbsp;&nbsp;java中编译器对静态属性的初始化,会保证对所有县城是可见和正确的.</p>
+
+<h2>为什么需要了解这些?</h2>
+
+<p>&nbsp;&nbsp;最大的理由就是多线程bug实在是太难复现和调试了,因此,与其出问题了再调试,不如学习足够多的知识,避免bug发生</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Web Service API最佳实践]]></title>
+    <link href="http://democraci.github.io/blog/2015/07/07/api_best_practice/"/>
+    <updated>2015-07-07T05:59:00+08:00</updated>
+    <id>http://democraci.github.io/blog/2015/07/07/api_best_practice</id>
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;在为公司开发Restful Web Service API中,根据我自己的经验, 还有网上的一些资料,总结出了一些best practice.</p>
+
+<h2>使用标准纯粹的Rest风格</h2>
+
+<p>&nbsp;&nbsp;对于什么是Rest风格的API, 大家可以参阅维基百科的定义,基本上讲得比较清楚.一般来说,推荐
+*  所有资源命名使用名词而非动词,更为具体的说, 应该使用复数名词.
+*  使用http method表示对资源的操作.同时各个http method中, GET是幂等的,也就是说,它不会对后台状态有影响.
+*  对于不是CRUD的操作,可以有如下做法:
+   1.  将该操作, 映射为资源的一个属性.比如如果对一个资源的active操作,可以实现成资源中的一个布尔型activated属性,通过PUT/PATCH方法更新资源时,即可更新该属性.这种实现方式,在操作无需参数时,比较方便.
+   2.  将操作当成资源的一个子资源.操作本质上也可以是一个资源.例如Github API中的<code>star a gist</code>操作,是县城了star:<code>PUT /gists/:id/star</code>, unstar:<code>DELETE /gists/:id/star</code>
+   3.  有时一些操作很难套成REST风格,例如search多种类型的资源操作,这个操作很难做成某个资源的action.此时<code>/search</code>更为合理,虽然search并不是一种资源.只要在文档中写明,并且从API用户的角度看不怪异,就行.
+*  在有层级关系的资源中使用嵌套资源url. 具体来说,就是使用<code>GET /cars/711/drivers/4</code>之类的嵌套url. 这个标准也不是绝对的,如果子资源的id在系统中是独一无二,那么为了更短更易读的url和更简单的实现, 有人推荐不使用嵌套的<a href="http://weblog.jamisbuck.org/2007/2/5/nesting-resources">操作</a>.</p>
+
+<h2>为结果集提供filter, sort, field selection, pagination功能</h2>
+
+<p>&nbsp;&nbsp;对于资源的index等操作,通常需要提供filter, sort, field selection, pagination等功能.这些功能的参数一般是作为url的查询参数.
+*  filter: 可以依据属性的值对结果集进行过滤.例如列出tickets资源时,我们只需要状态为open的资源, 这时就需要<code>GET /tickets?state=open</code>对结果集进行过滤.
+*  sort: 一般是提供一个通用的<code>sort</code>参数,该参数接收一个以<code>,</code>分隔的列表,依据列表中的属性对结果集进行排序.
+   - <code>GET /tickets?sort=-priority</code>: 对结果集按priority降序排序
+   - <code>GET /tickets?sort=-pripority, created_at</code>: 对结果集按priority降序排序,相同priority的记录项, 按created_at降序排序.</p>
+
+<ul>
+<li>field selection:允许用户指定每个记录中包含哪些属性,能够有效的降低网络带宽,也能提高API的速度.<code>GET /tickets?fields=suject,date,location</code></li>
+<li>pagination: pagination在结果集非常大时是很有用的.分页一般使用offset+limit,或者page+per_page的方式.返回的结果集中, 应该告诉用户结果集的总记录数等信息.</li>
+</ul>
+
+
+<h2>好的文档最重要</h2>
+
+<p>&nbsp;&nbsp;一个API最重要的部分就是文档,文档是API用户最为依赖的工具.API的文档应该风格统一,便于用户查找,还需要有具体的API使用示例.
+&nbsp;&nbsp;更新不及时的文档不是好文档,API功能的更新,文档也要随之更新,并通过blog或者change log之类的手段及时通知用户.</p>
+
+<h2>指明版本</h2>
+
+<p>&nbsp;&nbsp;API总是应该有版本的,版本的好处是显而易见的.对于API版本是否应该在url中还是http header中指明这个问题, 学院派的看法是应该在http header中,但是把版本包含在url中有一个很实用的好处, 就是可以直接通过浏览器访问api url,调试时很直观.  <br/>
+&nbsp;&nbsp;有人推荐使用<a href="https://stripe.com/docs/api#versioning">Stripe API</a>式的版本控制.在url中指明大版本,在http header中使用一个字段指明了小版本.这样大版本不变就是API结构保持稳定, 小版本则是在有一些小的改动时进行变化.   <br/>
+&nbsp;&nbsp;API不会是一成不变的,因此对变动的管理就尤为重要.在deprecate一个API时,如果有良好的文档说明,提前足够久向客户打招呼,那么就不是难以接受的.</p>
+
+<h2>使用JSON</h2>
+
+<p>&nbsp;&nbsp;相比XML, JSON作为API的返回格式,有很多优点, 更容易解析, 更易于阅读, 更容易和大多数编程语言中的数据模型对应.XML最大的有点是可扩展性更好,但是对于Web Service API, JSON已经足够用了.关于这俩点的优缺点之争,整个业界已经开始用脚投票了,使用JSON的企业和用户越来越多, 而XML由于其复杂性,越来越少. <br/>
+&nbsp;&nbsp;对于返回Content-Type/接受数据的格式,永远都记得要在http header的Content-Type/Accept里指明</p>
+
+<h2>对返回数据pretty print并开启gzip</h2>
+
+<p>&nbsp;&nbsp;对返回数据pretty print的一个好处是极大的方便了调试.虽然pretty print可能会增大返回数据的大小,但在量级上来说,这个量一般不大(10%以下).gzip可以大大减少传输数据的量,因此节省带宽,twitter发现使用gzip后,他们的某些API中,带宽节省达到了80%.</p>
+
+<h2>Authentication</h2>
+
+<p>&nbsp;&nbsp;无论什么时候, 对API的访问都应该使用SSL.
+&nbsp;&nbsp;由于Restful API是无状态的,因此每次请求都应该携带鉴权信息.</p>
+
+<h2>Cache</h2>
+
+<h2>Rate limiting</h2>
+
+<h2>错误处理</h2>
+
+<p>&nbsp;&nbsp;错误处理是API中至关重要的一环.API的返回包括两个部分, 一个是http状态码,一个是消息体.返回http状态码要严格遵照http协议中的定义(200/300/400/500, 具体可参见相关文档). <br/>
+&nbsp;&nbsp;返回的错误消息体中, 需要有一个消息错误码指明错误类型, 还有一个消息正文指明具体错误消息.这些都需要在文档中详细说明.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Readme]]></title>
+    <link href="http://democraci.github.io/blog/2015/07/07/README/"/>
+    <updated>2015-07-07T00:00:00+08:00</updated>
+    <id>http://democraci.github.io/blog/2015/07/07/README</id>
+    <content type="html"><![CDATA[<h1>democraci.github.io</h1>
+
+<p>This is a tech blog, which records thing I learned from my programming career</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Ruby代码规范]]></title>
+    <link href="http://democraci.github.io/blog/2011/07/10/ruby_style_guide_interprete/"/>
+    <updated>2011-07-10T11:59:00+08:00</updated>
+    <id>http://democraci.github.io/blog/2011/07/10/ruby_style_guide_interprete</id>
+    <content type="html"><![CDATA[<h2>引言</h2>
+
+<p>&nbsp;&nbsp;最近一直在看Clean Code,关注整洁代码编写方面的实践.之前组里有推广Rubocop,也一直在强调Ruby代码要合乎规范.我在github上找到了他们内部styleguide,地址可戳<a href="https://github.com/styleguide">https://github.com/styleguide</a>.Github在里面提供了他们内部开发时的CSS/JS/Ruby代码规范,上次公司邀请了外国友人来讲解CSS开发时需要避免的一些误区,我觉得参考这份CSS代码规范,应该会有更深刻的理解.<br/>
+&nbsp;&nbsp;闲话不多说,我们主要关注ruby的代码规范,github的ruby代码规范是来对ruby社区代码规范的一个精简,此代码规范可戳<a href="https://github.com/bbatsov/ruby-style-guide">https://github.com/bbatsov/ruby-style-guide</a>.Rubocop也是基于此代码规范实现的,这份规范被翻译成了多种语言,简体中文的版本可见<a href="https://github.com/JuanitoFatas/ruby-style-guide/blob/master/README-zhCN.md">link</a>.规范有点长,但我强烈建议大家通读一遍.我在通读的时候就发现了目前UI组内代码中一些不符合规范或者没有注意的地方,下面主要就摘抄出一些个人认为目前UI组内代码没有严格遵守的规范,并加了一点个人的理解,希望对大家有帮助.还是那句话,规范只有大家都去了解阅读,都去遵守,代码风格统一才有可能,没人了解实行的规范,即使再好,也发挥不了它的价值.<br/></p>
+
+<h2>源代码排版</h2>
+
+<ul>
+<li><p>对于没有成员的类，尽可能使用单行类定义。<code>LUO:这个场景主要是自定义异常类时</code></p>
+
+<pre><code class="``Ruby">  # 差
+  class FooError &lt; StandardError
+  end
+
+  # 勉强可以
+  class FooError &lt; StandardError; end
+
+  # 好
+  FooError = Class.new(StandardError)
+</code></pre></li>
+<li><p>当赋值一个条件表达式的结果给一个变量时，保持分支的缩排在同一层。<code>LUO:目前组内代码这块做得不是很统一,例子中的1,2种用法比较多,个人建议统一成第3种,行宽更短,结构也更清晰</code></p>
+
+<pre><code class="``Ruby">  # 差 - 非常复杂
+  kind = case year
+  when 1850..1889 then 'Blues'
+  when 1890..1909 then 'Ragtime'
+  when 1910..1929 then 'New Orleans Jazz'
+  when 1930..1939 then 'Swing'
+  when 1940..1950 then 'Bebop'
+  else 'Jazz'
+  end
+
+  result = if some_cond
+    calc_something
+  else
+    calc_something_else
+  end
+
+  # 好 - 结构很清晰
+  kind = case year
+         when 1850..1889 then 'Blues'
+         when 1890..1909 then 'Ragtime'
+         when 1910..1929 then 'New Orleans Jazz'
+         when 1930..1939 then 'Swing'
+         when 1940..1950 then 'Bebop'
+         else 'Jazz'
+         end
+
+  result = if some_cond
+             calc_something
+           else
+             calc_something_else
+           end
+
+  # 好 ( 避免代码让行宽过长 )
+  kind =
+    case year
+    when 1850..1889 then 'Blues'
+    when 1890..1909 then 'Ragtime'
+    when 1910..1929 then 'New Orleans Jazz'
+    when 1930..1939 then 'Swing'
+    when 1940..1950 then 'Bebop'
+    else 'Jazz'
+    end
+
+  result =
+    if some_cond
+      calc_something
+    else
+      calc_something_else
+    end
+</code></pre></li>
+<li><p>在 <code>def</code> 之间使用空行，并且用空行把方法分成合乎逻辑的段落。<code>LUO:在方法定义中应该随时记住对逻辑不同的代码段用空行隔开,对阅读很有帮助,这是对可读性提升很大的一个简单技巧.一个方法通常都有初始化,处理,返回三个逻辑清晰明显的部分</code></p>
+
+<pre><code class="``Ruby">  def some_method
+    data = initialize(options)
+
+    data.manipulate!
+
+    data.result
+  end
+
+  def some_method
+    result
+  end
+</code></pre></li>
+<li><p>当给方法的参数赋默认值时，在 <code>=</code> 两边使用空格：<code>LUO:这个我平时还没有注意过,不过可读性确实因此增加了不少.对于方法默认参数有时我们可以使用ruby2.0推出的关键字参数,它是个很有用的小技巧.[http://www.oschina.net/question/12_72725](http://www.oschina.net/question/12_72725)</code></p>
+
+<pre><code class="``Ruby">  # 差
+  def some_method(arg1=:default, arg2=nil, arg3=[])
+    # 做一些任务...
+  end
+
+  # 好
+  def some_method(arg1 = :default, arg2 = nil, arg3 = [])
+    # 做一些任务...
+  end
+</code></pre>
+
+<p>  虽然几本 Ruby 书建议用第一个风格，不过第二个风格在实践中更为常见（并可争议地可读性更高一点）。</p></li>
+<li><p>使用链式方法时风格统一。社区认为前引点号和末端点号都是好的风格。<code>LUO:目前组内并没有对这个进行统一,不过好像也没有多少地方有链式方法,个人觉得还是要定一个convention,遵守就好</code></p>
+
+<ul>
+<li>（可选 A）和当一个链式方法调用需要在另一行继续时，将 <code>.</code> 放在第二行。</li>
+</ul>
+
+
+<pre><code class="``Ruby">  # 差 - 为了理解第二行需要去查阅第一行
+  one.two.three.
+    four
+
+  # 好 - 第二行在做什么立刻变得很清晰
+  one.two.three
+    .four
+</code></pre>
+
+<ul>
+<li>（可选 B）末尾用点号表示表达式没有结束</li>
+</ul>
+
+
+<pre><code class="``Ruby">  # 差 - 需要读到第二行才能确定表达式没有结束
+  one.two.three
+    .four
+
+  # 好 - 从第一行就可以立即明白表达式没有结束
+  one.two.three.
+    four
+</code></pre></li>
+</ul>
+
+
+<p>两种方法各自优点参阅<a href="https://github.com/bbatsov/ruby-style-guide/pull/176">这里</a>。</p>
+
+<ul>
+<li><p>方法参数过长时，将它对齐排列在多行。当对齐的参数由于线宽不适合对齐时, 简单的在第一行之后缩进也是可以接受的。<code>LUO:此种情况目前组内代码也没有统一,2,3的做法都可以,重要的是风格统一</code></p>
+
+<pre><code class="``Ruby">  # 初始（行太长了）
+  def send_mail(source)
+    Mailer.deliver(to: 'bob@example.com', from: 'us@example.com', subject: 'Important message', body: source.text)
+  end
+
+  # 差（两倍缩排）
+  def send_mail(source)
+    Mailer.deliver(
+        to: 'bob@example.com',
+        from: 'us@example.com',
+        subject: 'Important message',
+        body: source.text)
+  end
+
+  # 好
+  def send_mail(source)
+    Mailer.deliver(to: 'bob@example.com',
+                   from: 'us@example.com',
+                   subject: 'Important message',
+                   body: source.text)
+  end
+
+  # 好（普通缩排）
+  def send_mail(source)
+    Mailer.deliver(
+      to: 'bob@example.com',
+      from: 'us@example.com',
+      subject: 'Important message',
+      body: source.text)
+  end
+</code></pre></li>
+<li><p>大数字添加下划线来改善可读性。<code>LUO:这是一个很小的技巧,却真的避免了人脑的许多工作,强烈推荐</code></p>
+
+<pre><code class="``Ruby">  # 差 - 有几个零？
+  num = 1000000
+
+  # 好 - 更容易被人脑解析。
+  num = 1_000_000
+</code></pre></li>
+<li><p>使用 RDoc 以及它的惯例来撰写 API 文档。注解区块及 <code>def</code> 不要用空行隔开。<code>LUO:组内注释时很少用RDoc方式,不过觉得不是什么大问题,最重要的还是代码清晰易读,注释只需要阐述关键信息即可.RDoc还增加了代码维护负担</code></p></li>
+</ul>
+
+
+<h2>语法</h2>
+
+<ul>
+<li><p>永远不要使用 <code>for</code> ，除非你很清楚为什么。大部分情况应该使用迭代器。<code>for</code> 是由 <code>each</code> 实现的。所以你绕弯了，而且 <code>for</code> 没有包含一个新的作用域 (<code>each</code> 有 ），因此它区块中定义的变量将会被外部所看到。<code>LUO:for中作用域和each等不一样我还真没有注意过.个人推荐少用for为好,一个原因是此种描述的作用域问题,另一个是使用each更容易和map等方法联合使用,更为清晰</code></p>
+
+<pre><code class="``Ruby">  arr = [1, 2, 3]
+
+  # 差
+  for elem in arr do
+    puts elem
+  end
+
+  # 注意 elem 会被外部所看到
+  elem #=&gt; 3
+
+  # 好
+  arr.each { |elem| puts elem }
+
+  # elem 不会被外部所看到
+  elem #=&gt; NameError: undefined local variable or method `elem'
+</code></pre></li>
+<li><p>利用 if 和 case 是表达式的特性。<code>LUO: 建议尽量利用ruby中大多数都是表达式的特性</code></p>
+
+<p>  ```Ruby
+  # 差
+  if condition
+    result = x
+  else
+    result = y
+  end</p>
+
+<p>  # 好
+  result =
+    if condition
+      x
+    else
+      y
+    end
+    ```</p></li>
+<li><p>使用 <code>!</code> 替代 <code>not</code>。</p>
+
+<pre><code class="``Ruby">  # 差 - 因为操作符有优先级，需要用括号。
+  x = (not something)
+
+  # 好
+  x = !something
+</code></pre></li>
+<li><p>避免使用 <code>!!</code>。<code>LUO:有些代码仍然有这样的用法</code></p>
+
+<pre><code class="``Ruby">  # 差
+  x = 'test'
+  # obscure nil check
+  if !!x
+    # body omitted
+  end
+
+  x = false
+  # double negation is useless on booleans
+  !!x # =&gt; false
+
+  # 好
+  x = 'test'
+  unless x.nil?
+    # body omitted
+  end
+</code></pre></li>
+<li><p><code>and</code> 和 <code>or</code> 这两个关键字被禁止使用了。 总是使用 <code>&amp;&amp;</code> 和 <code>||</code> 来取代。</p>
+
+<pre><code class="``Ruby">  # 差
+  # 布尔表达式
+  if some_condition and some_other_condition
+    do_something
+  end
+
+  # 控制流程
+  document.saved? or document.save!
+
+  # 好
+  # 布尔表达式
+  if some_condition &amp;&amp; some_other_condition
+    do_something
+  end
+
+  # 控制流程
+  document.saved? || document.save!
+</code></pre></li>
+<li><p>单行主体用 <code>if/unless</code> 修饰符。另一个好的方法是使用 <code>&amp;&amp;/||</code> 控制流程。<code>LUO:2,3种方法用的都比较多</code></p>
+
+<pre><code class="``Ruby">  # 差
+  if some_condition
+    do_something
+  end
+
+  # 好
+  do_something if some_condition
+
+  # 另一个好方法
+  some_condition &amp;&amp; do_something
+</code></pre></li>
+<li><p>避免在多行区块后使用 <code>if</code> 或 <code>unless</code>。<code>LUO:有时我会写出这样的代码,最大的坏处就是在阅读时很容易忽视if条件</code></p>
+
+<pre><code class="``Ruby">  # 差
+  10.times do
+    # multi-line body omitted
+  end if some_condition
+
+  # 好
+  if some_condition
+    10.times do
+      # multi-line body omitted
+    end
+  end
+</code></pre></li>
+<li><p>不要使用括号围绕 <code>if/unless/while</code> 的条件式。</p>
+
+<pre><code class="``Ruby">  # 差
+  if (x &gt; 10)
+    # 此处省略语句体
+  end
+
+  # 好
+  if x &gt; 10
+    # 此处省略语句体
+  end
+</code></pre></li>
+<li><p>无限循环用 <code>Kernel#loop</code>，不用 <code>while/until</code> 。<code>LUO:既然ruby提供了一个更易读更表意的loop方法,就应该用它</code></p>
+
+<pre><code class="``Ruby">  # 差
+  while true
+    do_something
+  end
+
+  until false
+    do_something
+  end
+
+  # 好
+  loop do
+    do_something
+  end
+</code></pre></li>
+<li><p>循环后条件判断使用 <code>Kernel#loop</code> 和 <code>break</code>，而不是 <code>begin/end/until</code> 或者 <code>begin/end/while</code>。<code>LUO:这样确实更为易读,因为阅读begin/end/while代码时,只有读到while时你会意识到这时一个循环,思维的方向和阅读的方向相反.</code></p>
+
+<pre><code class="`Ruby"> # 差
+ begin
+   puts val
+   val += 1
+ end while val &lt; 0
+
+ # 好
+ loop do
+   puts val
+   val += 1
+   break unless val &lt; 0
+ end
+</code></pre></li>
+<li><p>忽略围绕方法参数的括号，如内部 DSL (如：Rake, Rails, RSpec)，Ruby 中带有“关键字”状态的方法（如：<code>attr_reader</code>，<code>puts</code>）以及属性存取方法。所有其他的方法呼叫使用括号围绕参数。<code>LUO:这区分了关键字方法和其他方法</code></p>
+
+<pre><code class="``Ruby">  class Person
+    attr_reader :name, :age
+
+    # 忽略
+  end
+
+  temperance = Person.new('Temperance', 30)
+  temperance.name
+
+  puts temperance.age
+
+  x = Math.sin(y)
+  array.delete(e)
+
+  bowling.score.should == 0
+</code></pre></li>
+<li><p>如果方法是内部 DSL 的一部分，那么省略外层的花括号和圆括号。</p>
+
+<pre><code class="``Ruby">  class Person &lt; ActiveRecord::Base
+    # 差
+    validates(:name, { presence: true, length: { within: 1..10 } })
+
+    # 好
+    validates :name, presence: true, length: { within: 1..10 }
+  end
+</code></pre></li>
+<li><p>单行区块倾向使用 <code>{...}</code> 而不是 <code>do...end</code>。多行区块避免使用 <code>{...}</code>（多行串连总是​​丑陋）。在 <code>do...end</code> 、 “控制流程”及“方法定义”，永远使用 <code>do...end</code> （如 Rakefile 及某些 DSL）。串连时避免使用 <code>do...end</code>。<code>LUO: 串联时使用do...end特别丑陋,使用{...}可读性会好一点,但是阅读的负担还是很重,应该考虑抽成方法</code></p>
+
+<pre><code class="``Ruby">  names = ['Bozhidar', 'Steve', 'Sarah']
+
+  # 差
+  names.each do |name|
+    puts name
+  end
+
+  # 好
+  names.each { |name| puts name }
+
+  # 差
+  names.select do |name|
+    name.start_with?('S')
+  end.map { |name| name.upcase }
+
+  # 好
+  names.select { |name| name.start_with?('S') }.map { |name| name.upcase }
+</code></pre>
+
+<p>  某些人会争论多行串连时，使用 <code>{...}</code> 看起来还可以，但他们应该扪心自问——这样代码真的可读吗？难道不能把区块内容取出来放到小巧的方法里吗？</p></li>
+<li><p>显性使用区块参数而不是用创建区块字面量的方式传递参数给区块。此规则对性能有所影响，因为区块先被转化为 <code>Proc</code>。</p>
+
+<pre><code class="``Ruby">  require 'tempfile'
+
+  # 差
+  def with_tmp_dir
+    Dir.mktmpdir do |tmp_dir|
+      Dir.chdir(tmp_dir) { |dir| yield dir }  # block just passes arguments
+    end
+  end
+
+  # 好
+  def with_tmp_dir(&amp;block)
+    Dir.mktmpdir do |tmp_dir|
+      Dir.chdir(tmp_dir, &amp;block)
+    end
+  end
+
+  with_tmp_dir do |dir| # 使用上面的方法
+    puts "dir is accessible as a parameter and pwd is set: #{dir}"
+  end
+</code></pre></li>
+<li><p>避免在不需要控制流程的场合时使用 <code>return</code> 。</p>
+
+<pre><code class="``Ruby">  # 差
+  def some_method(some_arr)
+    return some_arr.size
+  end
+
+  # 好
+  def some_method(some_arr)
+    some_arr.size
+  end
+</code></pre></li>
+<li><p>避免在不需要的情况使用 <code>self</code> 。（只有在调用一个 self write 访问器时会需要用到。）<code>LUO: 在很多代码中我看见了self到处出现</code></p>
+
+<pre><code class="``Ruby">  # 差
+  def ready?
+    if self.last_reviewed_at &gt; self.last_updated_at
+      self.worker.update(self.content, self.options)
+      self.status = :in_progress
+    end
+    self.status == :verified
+  end
+
+  # 好
+  def ready?
+    if last_reviewed_at &gt; last_updated_at
+      worker.update(content, options)
+      self.status = :in_progress
+    end
+    status == :verified
+  end
+</code></pre></li>
+<li><p>变量自赋值用简写方式。</p>
+
+<pre><code class="``Ruby">  # 差
+  x = x + y
+  x = x * y
+  x = x**y
+  x = x / y
+  x = x || y
+  x = x &amp;&amp; y
+
+  # 好
+  x += y
+  x *= y
+  x **= y
+  x /= y
+  x ||= y
+  x &amp;&amp;= y
+</code></pre></li>
+<li><p>如果变量未被初始化过，用 <code>||=</code> 来初始化变量并赋值。<code>LUO: ||=和&amp;&amp;=是很有用的语法糖,代码越短,理解越容易</code></p>
+
+<pre><code class="``Ruby">  # 差
+  name = name ? name : 'Bozhidar'
+
+  # 差
+  name = 'Bozhidar' unless name
+
+  # 好 仅在 name 为 nil 或 false 时，把名字设为 Bozhidar。
+  name ||= 'Bozhidar'
+</code></pre></li>
+<li><p>不要使用 <code>||=</code> 来初始化布尔变量。 （想看看如果现在的值刚好是 <code>false</code> 时会发生什么。）<code>LUO:使用||=需要牢记这一点</code></p>
+
+<pre><code class="``Ruby">  # 差——会把 `enabled` 设成真，即便它本来是假。
+  enabled ||= true
+
+  # 好
+  enabled = true if enabled.nil?
+</code></pre></li>
+<li><p>使用 &amp;&amp;= 可先检查是否存在变量，如果存在则做相应动作。这样就无需用 <code>if</code> 检查变量是否存在了。<code>LUO:这个技巧在代码中很少见到,感觉很好用</code></p>
+
+<pre><code class="``Ruby">  # 差
+  if something
+    something = something.downcase
+  end
+
+  # 差
+  something = something ? something.downcase : nil
+
+  # 可以
+  something = something.downcase if something
+
+  # 好
+  something = something &amp;&amp; something.downcase
+
+  # 更好
+  something &amp;&amp;= something.downcase
+</code></pre></li>
+<li><p>总是使用 <code>-w</code> 来执行 Ruby 解释器，如果你忘了某个上述的规则，它就会警告你！<code>LUO: 这个选项很有用</code></p></li>
+<li><p>用新的 lambda 字面语法定义单行区块，用 <code>lambda</code> 方法定义多行区块。<code>LUO: lambda,-&gt;,proc其实是有差别的</code></p>
+
+<pre><code class="``Ruby">  # 差
+  lambda = lambda { |a, b| a + b }
+  lambda.call(1, 2)
+
+  # 正确，但看着怪怪的
+  l = -&gt;(a, b) do
+  tmp = a * 7
+  tmp * b / 50
+  end
+
+  # 好
+  l = -&gt;(a, b) { a + b }
+  l.call(1, 2)
+
+  l = lambda do |a, b|
+    tmp = a * 7
+    tmp * b / 50
+  end
+</code></pre></li>
+<li><p>用 <code>proc</code> 而不是 <code>Proc.new</code>。</p>
+
+<pre><code class="``Ruby">  # 差
+  p = Proc.new { |n| puts n }
+
+  # 好
+  p = proc { |n| puts n }
+</code></pre></li>
+<li><p>未使用的区块参数和局部变量使用 <code>_</code> 前缀或直接使用 <code>_</code>（虽然表意性差些） 。Ruby解释器和RuboCop都能辨认此规则，并会抑制相关地有变量未使用的警告。<code>LUO:_当做占位符,别人就能知道其未被使用</code></p>
+
+<pre><code class="``Ruby">  # 差
+  result = hash.map { |k, v| v + 1 }
+
+  def something(x)
+    unused_var, used_var = something_else(x)
+    # ...
+  end
+
+  # 好
+  result = hash.map { |_k, v| v + 1 }
+
+  def something(x)
+    _unused_var, used_var = something_else(x)
+    # ...
+  end
+
+  # 好
+  result = hash.map { |_, v| v + 1 }
+
+  def something(x)
+    _, used_var = something_else(x)
+    # ...
+  end
+</code></pre></li>
+<li><p>当处理你希望将变量作为数组使用，但不确定它是不是数组时，<code>LUO:我在代码中经常看见很多数组判断,这个技巧拯救这这种丑陋的代码</code>
+使用 <code>[*var]</code> 或 <code>Array()</code> 而不是显式的 <code>Array</code> 检查。</p>
+
+<pre><code class="``Ruby">  # 差
+  paths = [paths] unless paths.is_a? Array
+  paths.each { |path| do_something(path) }
+
+  # 好
+  [*paths].each { |path| do_something(path) }
+
+  # 好（而且更具易读性一点）
+  Array(paths).each { |path| do_something(path) }
+</code></pre></li>
+<li><p>尽量使用范围或 <code>Comparable#between?</code> 来替换复杂的逻辑比较。<code>LUO:选择表意性更好的方式</code></p>
+
+<pre><code class="``Ruby">  # 差
+  do_something if x &gt;= 1000 &amp;&amp; x &lt; 2000
+
+  # 好
+  do_something if (1000...2000).include?(x)
+
+  # 好
+  do_something if x.between?(1000, 2000)
+</code></pre></li>
+<li><p>尽量用判断方法而不是使用 <code>==</code> 。比较数字除外。<code>LUO:这看起来是有些小题大做,但代码表意性却明显提升了.阅读代码时头脑无需再去思考代码的逻辑意义</code></p>
+
+<pre><code class="``Ruby">  # 差
+  if x % 2 == 0
+  end
+
+  if x % 2 == 1
+  end
+
+  if x == nil
+  end
+
+  # 好
+  if x.even?
+  end
+
+  if x.odd?
+  end
+
+  if x.nil?
+  end
+
+  if x.zero?
+  end
+
+  if x == 0
+  end
+</code></pre></li>
+<li><p>除非是布尔值，不用显示检查它是否不是 <code>nil</code> 。<code>LUO: 有时会写很多nil?判断,但是根本不需要</code></p>
+
+<pre><code class="``Ruby">  # 差
+  do_something if !something.nil?
+  do_something if something != nil
+
+  # 好
+  do_something if something
+
+  # 好——检查的是布尔值
+  def value_set?
+    !@some_boolean.nil?
+  end
+</code></pre></li>
+<li><p>避免使用嵌套的条件来控制流程。
+当你可能断言不合法的数据，使用一个防御从句。一个防御从句是一个在函数顶部的条件声明，这样如果数据不合法就能尽快的跳出函数。<code>LUO:防御从句是个让代码变得清晰许多的技巧,对比下面的例子,相信你会有很深体会</code>
+  ```Ruby
+  # 差
+    def compute_thing(thing)
+      if thing[:foo]
+        update_with_bar(thing)
+        if thing[:foo][:bar]
+          partial_compute(thing)
+        else
+          re_compute(thing)
+        end
+      end
+    end</p>
+
+<p>  # 好
+    def compute_thing(thing)
+      return unless thing[:foo]
+      update_with_bar(thing[:foo])
+      return re_compute(thing) unless thing[:foo][:bar]
+      partial_compute(thing)
+    end
+  ```</p></li>
+<li><p>使用 <code>next</code> 而不是条件区块。<code>LUO:相比于所有代码都包含在if-end中,next明显代码编排易于阅读</code></p>
+
+<pre><code class="`Ruby"> # 差
+ [0, 1, 2, 3].each do |item|
+   if item &gt; 1
+     puts item
+   end
+ end
+
+ # 好
+ [0, 1, 2, 3].each do |item|
+   next unless item &gt; 1
+   puts item
+ end
+</code></pre></li>
+<li><p>倾向使用 <code>map</code> 而不是 <code>collect</code> ， <code>find</code> 而不是 <code>detect</code> ， <code>select</code> 而不是 <code>find_all</code> ， <code>reduce</code> 而不是 <code>inject</code> 以及 <code>size</code> 而不是 <code>length</code> 。这不是一个硬性要求；如果使用别名增加了可读性，使用它没关系。这些有押韵的方法名是从 Smalltalk 继承而来，在别的语言不通用。鼓励使用 <code>select</code> 而不是 <code>find_all</code> 的理由是它跟 <code>reject</code> 搭配起来是一目了然的。</p></li>
+<li><p>不要用 <code>count</code> 代替 <code>size</code>。除了<code>Array</code>其它<code>Enumerable</code>对象都需要遍历整个集合才能得到大小。<code>LUO:原来count是遍历集合才能得到结果</code></p>
+
+<pre><code class="``Ruby">  # 差
+  some_hash.count
+
+  # 好
+  some_hash.size
+</code></pre></li>
+<li><p>倾向使用 <code>flat_map</code> 而不是 <code>map</code> + <code>flatten</code> 的组合。
+这并不适用于深度大于 2 的数组，举个例子，如果 <code>users.first.songs == ['a', ['b', 'c']]</code> ，则使用 <code>map + flatten</code> 的组合，而不是使用 <code>flat_map</code>。
+<code>flat_map</code> 将数组变平坦一个层级，而 <code>flatten</code> 会将整个数组变平坦。<code>LUO:flat_map少敲了许多代码</code></p>
+
+<pre><code class="``Ruby">  # 差
+  all_songs = users.map(&amp;:songs).flatten.uniq
+
+  # 好
+  all_songs = users.flat_map(&amp;:songs).uniq
+</code></pre></li>
+</ul>
+
+
+<h2>命名</h2>
+
+<blockquote><p>程式设计的真正难题是替事物命名及使缓存失效。<br>
+——Phil Karlton(<code>LUO:totally agree</code>)
+* 判断式方法的名字（返回布尔值的方法）应以问号结尾。 (例如： <code>Array#empty?</code> )。不返回布尔值的方法不应用问号结尾。</p></blockquote>
+
+<ul>
+<li><p>有潜在<strong>危险性</strong>的方法，若此<strong>危险</strong>方法有安全版本存在时，应以安全版本名加上惊叹号结尾（例如：改动 <code>self</code> 或参数、 <code>exit!</code> （不会向 <code>exit</code> 那样运行 finalizers）, 等等方法）。</p></li>
+<li><p>如果存在潜在的<strong>危险</strong>方法（即修改 <code>self</code> 或者参数的方法，不像 <code>exit</code> 那样运行 finalizers 的 <code>exit!</code>，等等）的安全版本，那么 <em>危险</em> 方法的名字应该以惊叹号结尾。<code>LUO:危险这个词的含义没有统一定义,个人认为是含有让调用者惊异的行为.调用者可能根据方法名望文生义,猜测这个方法背后的逻辑,因此定义方法时,需要以调用者的视角检视方法,如果有可能和其望文生义的猜想不一致,要么就在方法定义时加入注释,要么就以!结尾</code></p>
+
+<pre><code class="``Ruby">  # 不好 - 没有对应的安全方法
+  class Person
+    def update!
+    end
+  end
+
+  # 好
+  class Person
+    def update
+    end
+  end
+
+  # 好
+  class Person
+    def update!
+    end
+
+    def update
+    end
+  end
+</code></pre></li>
+<li><p>如果可能的话，根据危险方法（bang）来定义对应的安全方法（non-bang）。<code>LUO:同时提供俩个版本,bang方法的存在才有意义</code></p>
+
+<pre><code class="``Ruby">  class Array
+    def flatten_once!
+      res = []
+
+      each do |e|
+        [*e].each { |f| res &lt;&lt; f }
+      end
+
+      replace(res)
+    end
+
+    def flatten_once
+      dup.flatten_once!
+    end
+  end
+</code></pre></li>
+<li><p>在简短区块中使用 <code>reduce</code> 时，把参数命名为 <code>|a, e|</code> (累加器（<code>accumulator</code>），元素（<code>element</code>）)<code>LUO:目前我们对于reduce/map等方法中得参数命名五花八门,个人建议是优先选择符合业务逻辑的名字</code></p></li>
+<li><p>在定义二元操作符时，把参数命名为 <code>other</code> （<code>&lt;&lt;</code> 与 <code>[]</code> 是这条规则的例外，因为它们的语义不同）。</p>
+
+<pre><code class="``Ruby">  def +(other)
+    # body omitted
+  end
+</code></pre></li>
+</ul>
+
+
+<h2>注释</h2>
+
+<blockquote><p>良好的代码是最佳的文档。当你要加一个注释时，扪心自问，“如何改善代码让它不需要注释？” 改善代码，再写相应文档使之更清楚。<br>
+——Steve McConnell</p></blockquote>
+
+<ul>
+<li>编写让人一目了然的代码然后忽略这一节的其它部分。我是认真的！<code>LUO:优美的代码本身就是一目了然,相比于烂代码+好注释,好的代码永远都更易于阅读</code></li>
+<li>及时更新注释。过时的注解比没有注解还差。</li>
+</ul>
+
+
+<blockquote><p>好代码就像是好的笑话 - 它不需要解释 <br>
+——Russ Olsen</p></blockquote>
+
+<ul>
+<li>避免替烂代码写注释。重构代码让它们看起来一目了然。（要嘛就做，要嘛不做——不要只是试试看。——Yoda）</li>
+</ul>
+
+
+<h3>注解</h3>
+
+<ul>
+<li>注解应该直接写在相关代码那行之前。</li>
+<li>注解关键字后面，跟着一个冒号及空格，接着是描述问题的文字。</li>
+<li><p>如果需要用多行来描述问题，后续行要放在 <code>#</code> 号后面并缩排两个空格。</p>
+
+<pre><code class="``Ruby">  def bar
+    # FIXME: 这在 v3.2.1 版本之后会异常崩溃，或许与
+    #   BarBazUtil 的版本更新有关
+    baz(:quux)
+  end
+</code></pre></li>
+<li><p>在问题是显而易见的情况下，任何的文档会是多余的，注解应放在有问题的那行的最后，并且不需更多说明。这个用法应该是例外而不是规则。</p>
+
+<pre><code class="``Ruby">  def bar
+    sleep 100 # OPTIMIZE
+  end
+</code></pre></li>
+<li><p>使用 <code>TODO</code> 标记以后应加入的特征与功能。</p></li>
+<li>使用 <code>FIXME</code> 标记需要修复的代码。</li>
+<li>使用 <code>OPTIMIZE</code> 标记可能影响性能的缓慢或效率低下的代码。</li>
+<li>使用 <code>HACK</code> 标记代码异味，即那些应该被重构的可疑编码习惯。</li>
+<li>使用 <code>REVIEW</code> 标记需要确认其编码意图是否正确的代码。举例来说：<code>REVIEW: 我们确定用户现在是这么做的吗？</code></li>
+<li>如果你觉得恰当的话，可以使用其他定制的注解关键字，但别忘记录在项目的 <code>README</code> 或类似文档中。</li>
+</ul>
+
+
+<h2>类与模块</h2>
+
+<ul>
+<li><p>在类别定义里使用一致的结构。<code>LUO:有些实践认为类别定义应该达到让人像阅读报纸一样阅读代码的效果,也就是说一个方法中使用到的其他方法定义应该就在它之后,而无需跳转到其他地方阅读这些方法定义.</code></p>
+
+<pre><code class="``Ruby">  class Person
+    # 首先是 extend 与 include
+    extend SomeModule
+    include AnotherModule
+
+    # 接着是常量
+    SOME_CONSTANT = 20
+
+    # 接下来是属性宏
+    attr_reader :name
+
+    # 跟着是其它的宏（如果有的话）
+    validates :name
+
+    # 公开的类别方法接在下一行
+    def self.some_method
+    end
+
+    # 跟着是公开的实例方法
+    def some_method
+    end
+
+    # 受保护及私有的方法，一起放在接近结尾的地方
+    protected
+
+    def some_protected_method
+    end
+
+    private
+
+    def some_private_method
+    end
+  end
+</code></pre></li>
+<li><p>如果某个类需要多行代码，则不要嵌套在其它类中。应将其独立写在文件中，存放以包含它的类的的名字命名的文件夹中。<code>LUO:是的,代码应该和房间一样,每样东西都放在它该放的地方</code></p>
+
+<pre><code class="``Ruby">  # 差
+
+  # foo.rb
+  class Foo
+    class Bar
+      # 30个方法
+    end
+
+    class Car
+      # 20个方法
+    end
+
+    # 30个方法
+  end
+
+  # 好
+
+  # foo.rb
+  class Foo
+    # 30个方法
+  end
+
+  # foo/bar.rb
+  class Foo
+    class Bar
+      # 30个方法
+    end
+  end
+
+  # foo/car.rb
+  class Foo
+    class Car
+      # 20个方法
+    end
+  end
+</code></pre></li>
+<li><p>倾向使用模块，而不是只有类别方法的类。类别应该只在产生实例是合理的时候使用。<code>LUO:module和class在此时实现功能没什么区别,但是却明显的有一个好处:调用者知道module不能被生成实例,会避免误用</code></p>
+
+<pre><code class="``Ruby">  # 差
+  class SomeClass
+    def self.some_method
+      # 省略函数体
+    end
+
+    def self.some_other_method
+    end
+  end
+
+  # 好
+  module SomeClass
+    module_function
+
+    def some_method
+      # 省略函数体
+    end
+
+    def some_other_method
+    end
+  end
+</code></pre></li>
+<li><p>当你想将模块的实例方法变成类别方法时，偏爱使用 <code>module_function</code> 胜过 <code>extend self</code>。</p>
+
+<pre><code class="``Ruby">  # 差
+  module Utilities
+    extend self
+
+    def parse_something(string)
+      # 做一些事
+    end
+
+    def other_utility_method(number, string)
+      # 做另一些事
+    end
+  end
+
+  # 好
+  module Utilities
+    module_function
+
+    def parse_something(string)
+      # 做一些事
+    end
+
+    def other_utility_method(number, string)
+      # 做另一些事
+    end
+  end
+</code></pre></li>
+<li><p>当设计类型层级时，确认它们符合 <a href="http://en.wikipedia.org/wiki/Liskov_substitution_principle">Liskov 替换原则</a>。<code>LUO:面向对象设计都应该符合里氏替换原则</code></p></li>
+<li>尽可能让你的类型越 <a href="http://en.wikipedia.org/wiki/SOLID_(object-oriented_design">SOLID</a>) 越好。</li>
+<li><p>永远替类型提供一个适当的 <code>to_s</code> 方法给来表示领域模型。<code>LUO:在rails中这条可能不是那么重要</code></p>
+
+<pre><code class="``Ruby">  class Person
+    attr_reader :first_name, :last_name
+
+    def initialize(first_name, last_name)
+      @first_name = first_name
+      @last_name = last_name
+    end
+
+    def to_s
+      "#{@first_name #@last_name}"
+    end
+  end
+</code></pre></li>
+<li><p>倾向使用<a href="http://en.wikipedia.org/wiki/Duck_typing">鸭子类型</a> 而不是继承。<code>LUO:是的,虽然我们在面向对象编程,但是继承的使用场景其实没那么广阔</code></p>
+
+<pre><code class="``Ruby">  ## 差
+  class Animal
+    # 抽象方法
+    def speak
+    end
+  end
+
+  # 继承超类
+  class Duck &lt; Animal
+    def speak
+      puts 'Quack! Quack'
+    end
+  end
+
+  # 继承超类
+  class Dog &lt; Animal
+    def speak
+      puts 'Bau! Bau!'
+    end
+  end
+
+  ## 好
+  class Duck
+    def speak
+      puts 'Quack! Quack'
+    end
+  end
+
+  class Dog
+    def speak
+      puts 'Bau! Bau!'
+    end
+  end
+</code></pre></li>
+<li><p>由于类变量在继承中产生的“讨厌的”行为，避免使用类变量（<code>@@</code>）。<code>LUO:是的,尽量避免使用类变量</code></p>
+
+<pre><code class="``Ruby">  class Parent
+    @@class_var = 'parent'
+
+    def self.print_class_var
+      puts @@class_var
+    end
+  end
+
+  class Child &lt; Parent
+    @@class_var = 'child'
+  end
+
+  Parent.print_class_var # =&gt; will print "child"
+</code></pre>
+
+<p>  如同你所看到的，在类型层级中的所有类其实都共享单独一个类变量。通常情况下应该倾向使用实例变量而不是类变量。</p></li>
+</ul>
+
+
+<h2>异常</h2>
+
+<ul>
+<li><p>使用 <code>fail</code> 方法来抛出异常。仅在捕捉到异常时使用 <code>raise</code> 来重新抛出异常（因为没有失败，所以只是显式地有目的性地抛出一个异常）<code>LUO:我们的代码几乎不用fail,fail关键字的表意性更好</code></p>
+
+<pre><code class="``Ruby">  begin
+   fail 'Oops';
+  rescue =&gt; error
+    raise if error.message != 'Oops'
+  end
+</code></pre></li>
+<li><p>尽可能使用隐式的 <code>begin</code> 区块。<code>LUO:是的,这样代码编排更漂亮,也很容易看出来方法有正常逻辑和错误处理俩部分</code></p>
+
+<pre><code class="``Ruby">  # 差
+  def foo
+    begin
+      # 此处放主要逻辑
+    rescue
+      # 错误处理放在此处
+    end
+  end
+
+  # 好
+  def foo
+    # 此处放主要逻辑
+  rescue
+    # 错误处理放在此处
+  end
+</code></pre></li>
+<li><p>通过 <em>contingency</em> 方法 (一个由 Avdi Grimm 创造的词) 来减少 <code>begin</code> 区块的使用。<code>LUO:这个是很多语言上都会使用的一个技巧,最大的好处就是错误处理和业务逻辑代码分开了,阅读时再也不会被烦人的异常处理代码吸引走注意力,程序员可以完全关注在业务逻辑上</code></p>
+
+<pre><code class="``Ruby">  # 差
+  begin
+    something_that_might_fail
+  rescue IOError
+    # 处理 IOError
+  end
+
+  begin
+    something_else_that_might_fail
+  rescue IOError
+    # 处理 IOError
+  end
+
+  # 好
+  def with_io_error_handling
+     yield
+  rescue IOError
+    # 处理 IOError
+  end
+
+  with_io_error_handling { something_that_might_fail }
+
+  with_io_error_handling { something_else_that_might_fail }
+</code></pre></li>
+<li><p>不要抑制异常。</p>
+
+<pre><code class="``Ruby">  begin
+    # 这里发生了一个异常
+  rescue SomeError
+    # 拯救子句完全没有做事
+  end
+
+  # 差
+  do_something rescue nil
+</code></pre></li>
+<li><p>避免使用 <code>rescue</code> 的修饰符形式。</p>
+
+<pre><code class="``Ruby">  # 差 - 这捕捉了所有的 StandardError 异常。
+  do_something rescue nil
+</code></pre></li>
+<li><p>不要为了控制流程而使用异常。<code>LUO:控制流程不应该和异常混淆</code></p>
+
+<pre><code class="``Ruby">  # 差
+  begin
+    n / d
+  rescue ZeroDivisionError
+    puts 'Cannot divide by 0!'
+  end
+
+  # 好
+  if d.zero?
+    puts 'Cannot divide by 0!'
+  else
+    n / d
+  end
+</code></pre></li>
+<li><p>避免救援 <code>Exception</code> 类别。这会把信号困住，并呼叫 <code>exit</code>，导致你需要 <code>kill -9</code> 进程。<code>LUO:永远都记得,细粒度的异常rescue,代码更容易读,从异常类名,我们就能知道什么错误发生了</code></p>
+
+<pre><code class="``Ruby">  # 差
+  begin
+    # 呼叫 exit 及杀掉信号会被捕捉（除了 kill -9）
+    exit
+  rescue Exception
+    puts "you didn't really want to exit, right?"
+    # 异常处理
+  end
+
+  # 好
+  begin
+    # 一个不明确的 rescue 子句捕捉的是 StandardError，
+    #   而不是许多编程者所设想的 Exception。
+  rescue =&gt; e
+    # 异常处理
+  end
+
+  # 也好
+  begin
+    # 这里发生一个异常
+
+  rescue StandardError =&gt; e
+    # 异常处理
+  end
+</code></pre></li>
+<li><p>把较具体的异常放在救援串连的较上层，不然它们永远不会被拯救。</p>
+
+<pre><code class="``Ruby">  # 差
+  begin
+    # 一些代码
+  rescue Exception =&gt; e
+    # 一些处理
+  rescue StandardError =&gt; e
+    # 一些处理
+  end
+
+  # 好
+  begin
+    # 一些代码
+  rescue StandardError =&gt; e
+    # 一些处理
+  rescue Exception =&gt; e
+    # 一些处理
+  end
+</code></pre></li>
+<li><p>在 <code>ensure</code> 区块中释放你的程式的外部资源。</p>
+
+<pre><code class="``Ruby">  f = File.open('testfile')
+  begin
+    # .. 处理
+  rescue
+    # .. 错误处理
+  ensure
+    f.close unless f.nil?
+  end
+</code></pre></li>
+<li><p>倾向使用标准库的异常类而不是导入新的异常类。<code>LUO:相信我,标准库考虑的比大多数人都多</code></p></li>
+</ul>
+
+
+<h2>集合</h2>
+
+<ul>
+<li><p>倾向数组及哈希的字面表示法（除非你需要给构造器传入参数）。<code>LUO: 我有见过一些Hash.new的用法,阅读时真的会因此而思维一顿</code></p>
+
+<pre><code class="``Ruby">  # 差
+  arr = Array.new
+  hash = Hash.new
+
+  # 好
+  arr = []
+  hash = {}
+</code></pre></li>
+<li><p>当你需要一个符号的数组（并且不需要保持 Ruby 1.9 兼容性）时，使用 <code>%i</code>。仅当数组只有两个及以上元素时才应用这个规则。<code>LUO:真的可以少键入很多:</code></p>
+
+<pre><code class="``Ruby">  # 差
+  STATES = [:draft, :open, :closed]
+
+  # 好
+  STATES = %i(draft open closed)
+</code></pre></li>
+<li><p>避免在数组中创造巨大的间隔。<code>LUO:ruby中的数组并没有想象的那么智能</code></p>
+
+<pre><code class="``Ruby">  arr = []
+  arr[100] = 1 # 现在你有一个很多 nil 的数组
+</code></pre></li>
+<li><p>当访问数组的首元素或尾元素时，尽量使用 <code>first</code> 或 <code>last</code>， 而非 <code>[0]</code> 或 <code>[-1]</code>。</p></li>
+<li><p>当处理的元素没有重复时，使用 <code>Set</code> 来替代 <code>Array</code> 。 <code>Set</code> 实现了无序、无重复值的集合。 <code>Set</code> 的方法同数组类一样直观，还可像哈希中那样快速查找元素。<code>LUO:是的,Set性能高很多很多</code></p></li>
+<li><p>避免使用可变的对象作为键值。<code>LUO:如果可变对象当键值,那就会有很多可怕地事情发生了</code></p></li>
+<li><p>当哈希的键为symbol时，使用 Ruby 1.9 的哈希的字面语法。<code>LUO:推荐使用这种方式,更为简练</code></p>
+
+<pre><code class="``Ruby">  # 差
+  hash = { :one =&gt; 1, :two =&gt; 2, :three =&gt; 3 }
+
+  # 好
+  hash = { one: 1, two: 2, three: 3 }
+</code></pre></li>
+<li><p>用 <code>Hash#key?</code>。不用 <code>Hash#has_key?</code>。用 <code>Hash#value?</code>。不用 <code>Hash#has_value?</code>。松本提到过已经不推荐使用较长的形式了。<code>LUO:算是一个小小的改变吧,个人觉得俩种都可读性差不多</code></p>
+
+<pre><code class="``Ruby">  # 差
+  hash.has_key?(:test)
+  hash.has_value?(value)
+
+  # 好
+  hash.key?(:test)
+  hash.value?(value)
+</code></pre></li>
+<li><p>在处理应该存在的哈希键时，使用 <code>Hash#fetch</code>。</p>
+
+<pre><code class="``Ruby">  heroes = { batman: 'Bruce Wayne', superman: 'Clark Kent' }
+  # 差 - 如果我们打错字的话，我们就无法找到对的英雄了
+  heroes[:batman] # =&gt; "Bruce Wayne"
+  heroes[:supermen] # =&gt; nil
+
+  # 好 - fetch 会抛出一个 KeyError 来使这个问题明显
+  heroes.fetch(:supermen)
+</code></pre></li>
+<li><p>在使用 <code>Hash#fetch</code> 时，使用第二个参数设置默认值。</p>
+
+<pre><code class="`Ruby"> batman = { name: 'Bruce Wayne', is_evil: false }
+
+ # 差 - 如果我们仅仅使用 || 操作符，那么当值为假时，我们不会得到预期的结果
+ batman[:is_evil] || true # =&gt; true
+
+ # 好 - fetch 在遇到假值时依然正确
+ batman.fetch(:is_evil, true) # =&gt; false
+</code></pre></li>
+<li><p>当需要从哈希中同时获取多个键值时，使用 <code>Hash#values_at</code>。<code>LUO:记住代码越少,越容易阅读,越不容易出错</code></p>
+
+<pre><code class="Ruby"># 差
+email = data['email']
+username = data['nickname']
+
+# 好
+email, username = data.values_at('email', 'nickname')
+</code></pre></li>
+<li><p>Ruby 1.9 的哈希是有序的，利用这个特性。</p></li>
+<li><p>在遍历一个集合时，不要改动它。</p></li>
+<li><p>当访问集合中的元素时，避免通过 <code>[n]</code> 直接访问，尽量使用提供的方法。这样可以防止你对 <code>nil</code> 调用 <code>[]</code>。<code>LUO:nil是个很烦的东西,判断nil真的很烦</code></p>
+
+<pre><code class="Ruby"># 差
+Regexp.last_match[1]
+
+# 好
+Regexp.last_match(1)
+</code></pre></li>
+<li><p>为集合提供存取器时，在访问元素之前采用一种替代的形式，从而防止用户访问的下标是 <code>nil</code>。</p>
+
+<pre><code class="Ruby"># 差
+def awesome_things
+  @awesome_things
+end
+
+# 好
+def awesome_things(index = nil)
+  if index &amp;&amp; @awesome_things
+    @awesome_things[index]
+  else
+    @awesome_things
+  end
+end
+</code></pre></li>
+</ul>
+
+
+<h2>字符串</h2>
+
+<ul>
+<li><p>选定一个字符串字面量创建的风格。Ruby 社区认可两种分割，默认用单引号（风格 A）和默认用双引号（风格 B）</p>
+
+<ul>
+<li><p><strong>（风格 A）</strong>当你不需要插入特殊符号如 <code>\t</code>, <code>\n</code>, <code>'</code>, 等等时，尽量使用单引号的字符串。<code>LUO:单引号会抑制转义</code></p>
+
+<pre><code class="Ruby"># 差
+name = "Bozhidar"
+
+# 好
+name = 'Bozhidar'
+</code></pre></li>
+<li><p><strong>（风格 B）</strong> 用双引号。除非字符串中含有双引号，或者含有你希望抑制的逃逸字符。</p>
+
+<pre><code class="Ruby"># 差
+name = 'Bozhidar'
+
+# 好
+name = "Bozhidar"
+</code></pre></li>
+</ul>
+
+
+<p>有争议的是，第二种风格在 Ruby 社区里更受欢迎一些。但是本指南中字符串采用第一种风格。</p></li>
+<li><p>不要用 <code>?x</code>。从 Ruby 1.9 开始， <code>?x</code> 和 <code>'x'</code> 是等价的（只包括一个字符的字符串）。<code>LUO:Ruby 1.9的新变化</code></p>
+
+<pre><code class="``Ruby">  # 差
+  char = ?c
+
+  # 好
+  char = 'c'
+</code></pre></li>
+<li><p>当你需要建构庞大的数据块（chunk）时，避免使用 <code>String#+</code> 。
+使用 <code>String#&lt;&lt;</code> 来替代。<code>&lt;&lt;</code> 就地改变字符串实例，因此比 <code>String#+</code> 来得快。<code>String#+</code> 创造了一堆新的字符串对象。<code>LUO:&lt;&lt;性能更好</code></p>
+
+<pre><code class="``Ruby">  # 好也比较快
+  html = ''
+  html &lt;&lt; '&lt;h1&gt;Page title&lt;/h1&gt;'
+
+  paragraphs.each do |paragraph|
+    html &lt;&lt; "&lt;p&gt;#{paragraph}&lt;/p&gt;"
+  end
+</code></pre></li>
+<li><p>heredocs 中的多行文字会保留前缀空白。因此做好如何缩进的规划。</p>
+
+<pre><code class="``Ruby">  code = &lt;&lt;-END.gsub(/^\s+\|/, '')
+    |def test
+    |  some_method
+    |  other_method
+    |end
+  END
+  #=&gt; "def\n  some_method\n  \nother_method\nend"
+</code></pre></li>
+</ul>
+
+
+<h2>正则表达式</h2>
+
+<blockquote><p>有些人在面对问题时，不经大脑便认为，「我知道，这里该用正则表达式」。现在他要面对两个问题了。<br>
+——Jamie Zawinski</p></blockquote>
+
+<ul>
+<li><p>如果只需要在字符串中简单的搜索文字，不要使用正则表达式：<code>string['text']</code>。<code>LUO:正则表达式的代价比较大</code></p></li>
+<li><p>针对简单的字符串查询，可以直接在字符串索引中直接使用正则表达式。<code>LUO:使用的小技巧,也更为可读</code></p>
+
+<pre><code class="``Ruby">  match = string[/regexp/] # 获得匹配正则表达式的内容
+  first_group = string[/text(grp)/, 1] # 或得分组的内容
+  string[/text (grp)/, 1] = 'replace' # string =&gt; 'text replace'
+</code></pre></li>
+<li><p>当你不需要替结果分组时，使用非分组的群组。<code>LUO:分组的成本很高,需要记住分组内容,具体可参见正则表达式实现相关文章</code></p>
+
+<pre><code class="``Ruby">  /(first|second)/ # 差
+  /(?:first|second)/ # 好
+</code></pre></li>
+<li><p>避免使用数字来获取分组。因为很难明白他们代表的意思。应该使用命名群组来替代。<code>LUO:命名比1,2等等更为可读</code></p>
+
+<pre><code class="``Ruby">  # 差
+  /(regexp)/ =~ string
+  ...
+  process Regexp.last_match[1]
+
+  # 好
+  /(?&lt;meaningful_var&gt;regexp)/ =~ string
+  ...
+  process meaningful_var
+</code></pre></li>
+<li><p>字符类别只有几个你需要关心的特殊字符：<code>^</code>、<code>-</code>、<code>\</code>、<code>]</code>，所以你不用转义 <code>[]</code> 中的 <code>.</code> 或中括号。</p></li>
+<li><p>小心使用 <code>^</code> 与 <code>$</code> ，它们匹配的是一行的开始与结束，不是字符串的开始与结束。如果你想要匹配整个字符串，使用 <code>\A</code> 与 <code>\z</code>。(译注：<code>\Z</code> 实为 <code>/\n?\z/</code>，使用 <code>\z</code> 才能匹配到有含新行的字符串的结束)<code>LUO:单行与多行模式时,^/$匹配的内容也不一样</code></p>
+
+<pre><code class="``Ruby">  string = "some injection\nusername"
+  string[/^username$/] # 匹配
+  string[/\Ausername\z/] # 不匹配
+</code></pre></li>
+<li><p>针对复杂的正则表达式，使用 <code>x</code> 修饰符。可提高可读性并可以加入有用的注释。只是要注意空白字符会被忽略。</p>
+
+<pre><code class="``Ruby">  regexp = %r{
+    start # 一些文字
+    \s # 空白字元
+    (group) # 第一组
+    (?:alt1|alt2) # 一些替代方案
+    end
+  }x
+</code></pre></li>
+<li><p>针对复杂的替换，<code>sub</code> 或 <code>gsub</code> 可以与区块或哈希结合使用。</p></li>
+</ul>
+
+
+<h2>元编程</h2>
+
+<ul>
+<li><p>避免无谓的元编程。<code>LUO:虽然元编程很酷炫,但也不要滥用了</code></p></li>
+<li><p>写一个函数库时不要使核心类混乱（不要使用 monkey patch）。<code>LUO:除非迫不得已,否则不要修改标准库中得核心类</code></p></li>
+<li><p>倾向使用区块形式的 <code>class_eval</code> 而不是字符串插值（string-interpolated）的形式。</p>
+
+<ul>
+<li><p>当你使用字符串插值形式时，总是提供 <code>__FILE__</code> 及 <code>__LINE__</code>，使你的 backtrace 看起来有意义：</p>
+
+<pre><code class="ruby">class_eval "def use_relative_model_naming?; true; end", __FILE__, __LINE__
+</code></pre></li>
+<li><p>倾向使用 <code>define_method</code> 而不是 <code>class_eval{ def ... }</code></p></li>
+</ul>
+</li>
+<li><p>当使用 <code>class_eval</code> （或其它的 <code>eval</code>）搭配字符串插值时，添加一个注解区块，来演示如果做了插值的样子（我从 Rails 代码学来的一个实践）：</p>
+
+<pre><code class="``ruby">  # activesupport/lib/active_support/core_ext/string/output_safety.rb
+  UNSAFE_STRING_METHODS.each do |unsafe_method|
+    if 'String'.respond_to?(unsafe_method)
+      class_eval &lt;&lt;-EOT, __FILE__, __LINE__ + 1
+        def #{unsafe_method}(*args, &amp;block) # def capitalize(*args, &amp;block)
+          to_str.#{unsafe_method}(*args, &amp;block) # to_str.capitalize(*args, &amp;block)
+        end # end
+
+        def #{unsafe_method}!(*args) # def capitalize!(*args)
+          @dirty = true # @dirty = true
+          super # super
+        end # end
+      EOT
+    end
+  end
+</code></pre></li>
+<li><p>元编程避免使用 <code>method_missing</code>。会让 Backtraces 变得很凌乱；行为没有列在 <code>#methods</code> 里；拼错的方法调用可能默默的工作（<code>nukes.launch_state = false</code>）。考虑使用 delegation, proxy, 或是 <code>define_method</code> 来取代。如果你必须使用 <code>method_missing</code>，</p>
+
+<ul>
+<li>确保 <a href="http://blog.marc-andre.ca/2010/11/methodmissing-politely.html">也定义了 <code>respond_to_missing?</code></a></li>
+<li>仅捕捉字首定义良好的方法，像是 <code>find_by_*</code>——让你的代码愈肯定（assertive） 愈好。</li>
+<li>在语句的最后调用 <code>super</code></li>
+<li><p>delegate 到确定的、非魔法方法中:</p>
+
+<pre><code class="ruby"># 差
+def method_missing?(meth, *args, &amp;block)
+  if /^find_by_(?&lt;prop&gt;.*)/ =~ meth
+    # ... lots of code to do a find_by
+  else
+    super
+  end
+end
+
+# 好
+def method_missing?(meth, *args, &amp;block)
+  if /^find_by_(?&lt;prop&gt;.*)/ =~ meth
+    find_by(prop, *args, &amp;block)
+  else
+    super
+  end
+end
+
+# 最好的方式，可能是每个可找到的属性被声明后，使用 define_method。
+</code></pre></li>
+</ul>
+</li>
+</ul>
+
+
+<h2>其它</h2>
+
+<ul>
+<li><code>ruby -w</code> 写安全的代码。</li>
+<li>避免使用哈希作为可选参数。这个方法是不是做太多事了？（对象初始器是本规则的例外）。</li>
+<li>避免方法长于 10 行代码（LOC）。理想上，大部分的方法会小于 5 行。空行不算进 LOC 里。</li>
+<li>避免参数列表长于三或四个参数。</li>
+<li>如果你真的需要“全局”方法，把它们加到 Kernel 并设为私有的。</li>
+<li><p>使用模块变量代替全局变量。</p>
+
+<pre><code class="``Ruby">  # 差
+  $foo_bar = 1
+
+  # 好
+  module Foo
+    class &lt;&lt; self
+      attr_accessor :bar
+    end
+  end
+
+  Foo.bar = 1
+</code></pre></li>
+<li><p>使用 <code>OptionParser</code> 来解析复杂的命令行选项及 <code>ruby -s</code> 来处理琐碎的命令行选项。</p></li>
+<li>使用 <code>Time.now</code> 而不是 <code>Time.new</code> 来获取系统时间。</li>
+<li>用函数式的方法编程，在有意义的情况下避免赋值 (mutation)。</li>
+<li>不要改变参数，除非那是方法的目的。</li>
+<li>避免超过三层的区块嵌套。</li>
+<li>保持一致性。在理想的世界里，遵循这些准则。</li>
+<li>使用常识。</li>
+</ul>
+
+
+<h2>工具</h2>
+
+<p>以下是一些工具，让你自动检查 Ruby 代码是否符合本指南。</p>
+
+<h3>RuboCop</h3>
+
+<p><a href="https://github.com/bbatsov/rubocop">RuboCop</a> 是一个基于本指南的 Ruby 代码风格检查工具。 RuboCop 涵盖了本指南相当大的部分，支持 MRI 1.9 和 MRI 2.0，而且与 Emacs 整合良好。</p>
+
+<h3>RubyMine</h3>
+
+<p><a href="http://www.jetbrains.com/ruby/">RubyMine</a> 的代码检查<a href="http://confluence.jetbrains.com/display/RUBYDEV/RubyMine+Inspections">部分基于</a>本指南。</p>
+
+<h1>贡献</h1>
+
+<p>在本指南所写的每条规则都不是定案。这只是我渴望想与同样对 Ruby 编程风格有兴趣的大家一起工作，以致于最终我们可以替整个 Ruby 社区创造一个有益的资源。</p>
+
+<p>欢迎 open tickets 或 push 一个带有改进的更新请求。在此提前感谢你的帮助！</p>
+
+<h2>如何贡献？</h2>
+
+<p>很简单，只需要参考 <a href="https://github.com/bbatsov/ruby-style-guide/blob/master/CONTRIBUTING.md">贡献准则</a>。</p>
+
+<h1>授权</h1>
+
+<p><img src="http://i.creativecommons.org/l/by/3.0/88x31.png" alt="Creative Commons License" />
+This work is licensed under a <a href="http://creativecommons.org/licenses/by/3.0/deed.zh">Creative Commons Attribution 3.0 Unported License</a></p>
+
+<h1>口耳相传</h1>
+
+<p>一份社区驱动的风格指南，如果没多少人知道，对一个社区来说就没有多少用处。微博转发这份指南，分享给你的朋友或同事。我们得到的每个评价、建议或意见都可以让这份指南变得更好一点。而我们想要拥有的是最好的指南，不是吗？</p>
+
+<p>共勉之，<br>
+<a href="https://twitter.com/bbatsov">Bozhidar</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[关于中断的笔记]]></title>
+    <link href="http://democraci.github.io/blog/2011/07/08/interrupt/"/>
+    <updated>2011-07-08T13:44:00+08:00</updated>
+    <id>http://democraci.github.io/blog/2011/07/08/interrupt</id>
+    <content type="html"><![CDATA[<h1>中断分类</h1>
+
+<h2>硬件中断</h2>
+
+<ul>
+<li>可屏蔽中断: 可通过CPU或中断控制器屏蔽控制器来屏蔽的中断</li>
+<li>非可屏蔽中断</li>
+</ul>
+
+
+<h2>软件中断</h2>
+
+<ul>
+<li>软件中断: 通过软件指令生成的中断, 与硬件中断相比, 软件中断为同步的方式.表现为CPU指令集中的一条指令, 通常用于陷入内核态中.</li>
+</ul>
+
+
+<h1>CPU的角度看中断</h1>
+
+<h2>硬件</h2>
+
+<p>CPU上有一个或多个引脚,这些引脚通过状态触发或边沿触发, 感知是否有中断发生. 不同的引脚可以分类为可屏蔽中断或屏蔽中断. CPU内部的寄存器, 也可以设置屏蔽位.</p>
+
+<ul>
+<li>状态触发: 维持在引脚线上维持高电平,通知cpu有中断发生, 直到cpu进行了中断处理,才将电平复位.</li>
+<li>边沿触发: 发送一个脉冲至cpu,通知cpu有中断发生, 这类中断容易丢失, 可以通过使用一个锁存器保寸历史中断.</li>
+</ul>
+
+
+<h2>软件</h2>
+
+<p>CPU每次执行一个指令前, 都会根据CPU引脚判断是否有中断发生.如果有中断发生,则不是取下一条指令,而是执行中断处理.中断处理首先保存当前执行现场, 然后通过中断向量找到对应的中断矢量表, 根据中断矢量表中设定的中断服务程序地址, 载入中断处理程序, 运行完成后, 恢复现场, 继续之前的处理.</p>
+
+<h3>中断处理过程</h3>
+
+<p>在实际运行中，一旦设备通过某引脚N向8259A发出中断指令，后者便向8086A的INTR引脚发送中断信号。8086A通过INTA引脚通知8259A中断有效（这个过程实际上还包括对此8259A的选址），后者即通过地址总线将对应引脚N的中断类型码（已预先存好，见上节）发送给CPU。CPU得到中断类型码后，先进行现场保护，主要包括：</p>
+
+<p>状态寄存器FLAGS压栈（同时堆栈寄存器SP-2）；
+关闭中断（将FLAGS寄存器的IF位置零）；
+将当前代码段寄存器CS和程序计数器IP压栈（同时堆栈寄存器SP-4）。
+现场保护完成后，CPU开始按照前述的两步骤翻译中断程序入口地址。在得到中断处理程序地址之后但调用中断处理程序之前，CPU会再检查一下NMI引脚是否有信号，以防在刚才的处理过程中忽略了可能的NMI中断。NMI的优先级始终高于INTR。</p>
+
+<p>中断处理程序虽然是由程序员编写，但须循一定规范。作为例程，中断处理程序应该先将各寄存器信息（除了IP和CS，此二寄存器现已指向当前中断程序）压入堆栈予以保存，这样才能在中断处理程序内部使用这些寄存器。在程序结束时，应该按与压栈保护时相反的顺序弹出各寄存器的值。中断程序的最后一句始终是IRET指令，这条指令将栈顶6个字节分别弹出并存入IP、CS和FLAGS寄存器，完成了现场的还原。</p>
+
+<h1>外设的角度看中断</h1>
+
+<p>外设在硬件上表现为数据缓冲区, 控制器, 物理部分, DMA. 软件上包括cpu指令, cpu内核驱动程序.</p>
+
+<h2>硬件</h2>
+
+<p>一个外设, 有一个控制器, 控制器接收cpu过来的指令,对外设进行相应操作.还有数据缓冲区, 相应的数据放在缓冲区中,在需要时传送到内核内存区或用户内存中.
+为了将CPU从内存和数据缓冲区的数据复制工作中解放开来, 出现了DMA.</p>
+
+<h2>软件</h2>
+
+<p>CPU操作外设的指令. 指令中对控制器上寄存器的抽象, 可以直接通过内存访问, 也可以采用专用的通道.</p>
+
+<p>CPU发起一个外设操作,即是发送指令.然后, CPU可以    <br/>
+-   轮询
+-   去忙其他的事情, 等待中断</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[单元测试是否应该测试私有/保护方法]]></title>
+    <link href="http://democraci.github.io/blog/2011/07/07/should_private_protected_methods_be_under_unit_test/"/>
+    <updated>2011-07-07T12:59:00+08:00</updated>
+    <id>http://democraci.github.io/blog/2011/07/07/should_private_protected_methods_be_under_unit_test</id>
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;前几日在写单元测试和同事有一番争论:是否应该测试private/protected方法?同事的意见是所有的方法都应该测试,这样能够确保代码覆盖率,在代码改动时只要跑跑case就能确保更改是否正确,心里更安稳.我则觉得,一把菜刀如果做成十斤重,那就丝毫没有使用价值了,如果为private/protected方法都加单元测试,那么测试代码必然急剧膨胀,编写维护测试代码的成本就足以耗死人了,得不偿失.  <br/>
+&nbsp;&nbsp;我无法说服同事,也感觉似乎无法说服自己,维护测试代码的成本虽然会很高,但仅仅这一个理由, 也不够充分.后来在stackoverflow上,我搜索到了一个关于此论题的<a href="http://stackoverflow.com/questions/5601730/should-private-protected-methods-be-under-unit-test">探讨</a>,一下子豁然开朗.  <br/>
+&nbsp;&nbsp;参与讨论的人,对此问题,一边倒的给出答案都是不应该测试private方法.具体的理由有:
+*   public方法是对象提供给外界的接口,private则是对外部隐藏的内部实现.外界只关心提供的接口是否正确,不关心它是怎么实现.只对public方法测试,就已经可以确保对象工作正常, 无需画蛇添足.
+*   对private方法测试, 就需要了解对象内部实现,额,测试代码和具体的实现有了强耦合.那么代码稍微的改动,测试代码的更改就会让人喝一大壶.
+*   如果case对代码的覆盖率不够,有些private/protected方法在跑case时没有被hit,要么是对public方法的测试不够充分,要么就是代码结构有问题, 不必为private方法添加case,缘木求鱼的提高覆盖率.</p>
+
+<p>&nbsp;&nbsp;除了这些理由,有人还给出一些形而上的原因.TDD其实从内里来说,是BDD, B是Behavior,所以我们其实测试的是行为, 而不是方法.在测试对象行为时, 暗含的就测试了private/protected方法.这个解释相当简单有力,但我很好奇为什么在讲解单元测试的时候,很少有人能将这个说法放在第一章.还有种说法,测试其实是使用对象的例子,因此只需测试public方法.</p>
+
+<p>&nbsp;&nbsp;protected方法是否应该被测试,则有小部分人给出yes,大部分人还是坚持不应该测试.反方的理由其实和private方法不应该测试一样,public方法已经包含了对象向外界暴露的行为,测试public方法就暗含的测试了protected方法,无需多此一举.正方则反驳说,其实protected方法也算是一种接口,是父类和子类的约定,自然值得测试. <br/>
+&nbsp;&nbsp;关于这个问题,我的答案是,只需要测试public方法,理由已在上面列出.如果测试覆盖率不够,我们更应该反思类是否太过庞大,承担了太多职责,以至于测试用例很难完全覆盖所有行为,或者private/protected/public权限设计的不够正确,public方法不符合单一职责原则,做了太多事情,因此测试不友好.坚持只测试public方法, 从编写测试代码的难易程度,也能够相当方面的反应程序设计是否合理.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[A Introduction to Microservices]]></title>
+    <link href="http://democraci.github.io/blog/2011/07/07/microservices_introduce/"/>
+    <updated>2011-07-07T10:59:00+08:00</updated>
+    <id>http://democraci.github.io/blog/2011/07/07/microservices_introduce</id>
+    <content type="html"><![CDATA[<h2>引言</h2>
+
+<p>&nbsp;&nbsp;在2015年的北京QCon上,我听了一个关于微服务(microservices)的演讲,&ldquo;API先行策略对企业的影响&rdquo;.主讲的哥们没有花时间讲解API相关的主题,全场都在布道微服务架构.之后我在<a href="http://http://microservices.io/">microservices.io</a>上找到了一篇Martin Fowler关于微服务的详细介绍文章, 有点体会,下面内容是我对这篇文章的一点体会,内容多有雷同.恰好UI目前有意向推动整个架构向微服务方向变化,希望能够对大家能够有所帮助.</p>
+
+<h2>一体化架构和微服务架构</h2>
+
+<p>&nbsp;&nbsp;微服务是近年来兴起的一个软件架构风格方面的名词,有很多公司软件架构在演化中其实最后都变成了微服务或类似微服务,这个名词的出现正好填补了这个指代空缺.我直接引用Martin Fowler的微服务定义如下: <br/></p>
+
+<blockquote><p>In short, the microservice architectural style [1] is an approach to developing a single application as a suite of small services, each running in its own process and communicating with lightweight mechanisms, often an HTTP resource API. These services are built around business capabilities and independently deployable by fully automated deployment machinery. There is a bare minimum of centralized management of these services, which may be written in different programming languages and use different data storage technologies.</p></blockquote>
+
+<p>&nbsp;&nbsp;定义中的关键词有<code>一个应用是多个小服务(a single application as a suite of small services)</code>, <code>轻量通信方式(lightweight communication mechanisms)</code>, <code>围绕业务需求构建(built around business capabilities
+)</code>, <code>独立部署(independently deployable)</code>,<code>去中心化管理(decentralize)</code>,<code>灵活地技术栈选择(use different programming languages and data storage technologies)</code>.<br />
+这些关键词很好地描绘了微服务架构的基本特征,关于这些关键字在微服务架构中得详细体现和带来的好处,下面会慢慢介绍.<br />
+相对于微服务架构的,是一体化架构(Monolithic architecture).这个架构最常见,一个应用就是一个开发单元.Martin Fowler的定义:<br/></p>
+
+<blockquote><p>a monolithic application built as a single unit. Enterprise Applications are often built in three main parts: a client-side user interface (consisting of HTML pages and javascript running in a browser on the user&rsquo;s machine) a database (consisting of many tables inserted into a common, and usually relational, database management system), and a server-side application. The server-side application will handle HTTP requests, execute domain logic, retrieve and update data from the database, and select and populate HTML views to be sent to the browser. This server-side application is a monolith - a single logical executable[2]. Any changes to the system involve building and deploying a new version of the server-side application.</p></blockquote>
+
+<p>&nbsp;&nbsp;注意到其中的关键词<code>单一的可执行单元(a single logical executable)</code>,相对于微服务的将应用拆分成多个小服务的实现,必然带来的问题就是引用中说到得,每个小改变都要重新编译部署整个应用.</p>
+
+<h2>微服务的特征</h2>
+
+<h3>组件与服务</h3>
+
+<p>&nbsp;&nbsp;人们心目中理想的软件开发是这样的,有很多像乐高积木一样的组件,编写应用就是简单地搭积木.在现实应用开发过程中,我们会将很多东西都抽成组件,整个应用是组件的组合.组件简单地来说,就是一个可以独立被替换/更新而不影响整个应用的单元</br>
+&nbsp;&nbsp;对于微服务来说,组件是一个个服务.每个服务运行在单独的进程上(不是绝对),服务之间通过远程调用通信.而在一体化架构中,应用是一个大进程,组件们在同一进程内存中.<br />
+&nbsp;&nbsp;比较一下一体化架构和微服务架构,一体化架构组件之间的调用, 成本比服务之间远程调用要低很多.但是组件的每次更新,都要求对整个应用进行重新编译部署,服务就不存在这个问题.理想情况下,组件之间的边界是应该足够清晰的,低耦合高内聚.但在一体化架构下,受累于很多语言并没有良好的<a href="http://martinfowler.com/bliki/PublishedInterface.html">公共接口</a>机制,随着时间的推移,很难维持组件间的边界,最终导致组件间依赖逐渐发生,一切越来越浆糊.微服务架构中,由于远程调用接口天然就是一个明确的边界,也是一个更清晰的接口,可以更容易维持组件之间的独立性.<br/>
+&nbsp;&nbsp;微服务架构中各服务之间的远程API一般比内存中直接调用的API要粗糙得多,因为远程调用成本高,为了压缩成本,API的粒度必然要更大<br/></p>
+
+<h3>机构组织</h3>
+
+<p>Conway法则是这样说的:<br/></p>
+
+<blockquote><p>Any organization that designs a system (defined broadly) will produce a design whose structure is a copy of the organization&rsquo;s communication structure.</p></blockquote>
+
+<p>&nbsp;&nbsp;基于这一法则,一般公司部门的划分,其实就是应用拆分的一个复本.例如UI组,数据库组,服务逻辑组.这带来的问题就是团队协作实在太多了,逻辑散布在各个部门中,小小的变更都会导致跨团队间协作.
+<br/>
+<img src="http://martinfowler.com/articles/microservices/images/conways-law.png" alt="image" /><br/>
+&nbsp;&nbsp;微服务架构中服务的组织是基于业务功能的,团队的划分也是基于服务的组织,每个团队负责各自服务的用户接口,持久化存储等各方面.因此团队是跨职能的,负责所有开发相关方面:项目管理,数据库,用户体验.因此变更带来的跨团队协作变得更少了.<br/>
+<img src="http://martinfowler.com/articles/microservices/images/PreferFunctionalStaffOrganization.png" alt="image" /><br/></p>
+
+<h3>产品不是项目</h3>
+
+<p>&nbsp;&nbsp;大多数应用开发都是采取项目模型:致力提供一个完整地软件,一旦开发完成,软件移交给维护部门,然后就没有开发团队的事情了.<br/>
+&nbsp;&nbsp;微服务架构则尽力避免这种开发模型,一个团队应该管理一个产品的全生命周期.Amazon的理念是"you build, you run it",开发团队需要对线上的软件负担全部责任.开发者需要每天都了解线上软件的运行状况,并需要承担一些售后支持,与用户的联系也必然更紧密.开发者经常不关心"软件如何帮助用户强化他们的商业竞争力",这种做法能够让开发者更加关注用户,而不是埋头实现功能.<br/>
+&nbsp;&nbsp;当然在一体化架构中,也可以实现"you build, you run it".但是相比整个庞大应用,服务是更为细粒度的东西,更自然的在开发者和用户间构造联系.</p>
+
+<h3>强终端和弱管道</h3>
+
+<p>&nbsp;&nbsp;当构建跨进程间的通信架构时,很多产品和设计都会在通信机制中强加入很多东西,ESB(Enterprise Service Bus)就是一个例子,它包含了很多消息路由,编码,传输,业务规则等等机制.<br/>
+&nbsp;&nbsp;微服务架构则通常不这么做,而是强终端和弱管道.微服务架构在构造应用时,一个目标就是服务间依赖解耦,并高内聚,因此通信管道不能加入太多逻辑.这有点像Unix的风格,每个服务就是接受一系列输入,做处理,然后输出,简单地通信管道把这一切粘合起来,完成复杂的业务逻辑.<br/>
+&nbsp;&nbsp;微服务架构因此多使用建立在HTTP协议上的resource API(Restful API)或轻量级消息中间件.轻量级消息中间件一般就是实现了消息路由即可,甚至没有可靠的异步机制,一切都在终端处理.<br/>
+一体化架构中,组件都是在同一进程中,通信就是简单地方法调用.对于微服务架构来说,内存中的方法调用变成了RPC,由此带来了不可靠的问题,由此需要将原来粒度很细的调用,换成粗粒度的调用.</p>
+
+<h3>去中心化管理</h3>
+
+<p>&nbsp;&nbsp;在一体化架构中,中心化管理倾向于将技术标准化,解决问题的方案因此也就被限制了.但是对于不同的问题,各自有合适的技术解决方案.C++适合编写实时性能要求高的组件,Ruby适合快速网络应用开发.微服务架构将应用拆分成多个服务,每个服务因此可以采取适合的技术方案.例如,如果某个服务的实现需要采取PostgrelSQL的一个特性,那尽管去使用,对其他服务来说,此服务的内部实现是个黑盒,无需关心.一切都因此更为灵活了.</p>
+
+<h3>分散数据管理</h3>
+
+<p>&nbsp;&nbsp;一体化服务中,一个应用使用单一的数据库对数据进行持久化.但微服务架构中,每个服务团队都需要管理自己的数据库,无论是使用相同数据的同一实例,或者是使用不同的数据库系统.<br/>
+&nbsp;&nbsp;在管理数据更新时,经常使用数据库事务来保证一致性.但数据如果散布在多个数据库系统上,分布式事务管理系统不仅难以实现,而且成本很高.因此微服务架构强调服务之间的事务协调,一致性也只能是最终一致性,并通过补偿操作来问题出现时进行处理.<br/>
+&nbsp;&nbsp;选择这样处理一致性问题对很多开发团队来说是挑战,但这样做其实是一个常见业务实践模式.通常我们会允许一定的不一致性来保证快速响应性能,然后有一个进程专门处理错误.当业务上处理强一致性的消耗比处理错误消耗少时,这样做是值得的.</p>
+
+<h3>基础设施自动化</h3>
+
+<p>&nbsp;&nbsp;过去的几年中,基础设施自动化技术已经得到了长足发展,尤其是云的出现,使构建,发布,运维的复杂性大大降低.<br/>
+&nbsp;&nbsp;如果没有基础设施自动化技术支持,一个应用分成许许多多个微服务后,构建,测试,发布应用的成本必然高的不可想象.持集部署和持续集成,是目前自动化构建常用的技术.持集部署的一个目标在于让发布变得简单,无论一个还是十个.微服务架构必然更加依赖与基础设施自动化技术.</p>
+
+<h3>容错性设计</h3>
+
+<p>&nbsp;&nbsp;使用服务当做组件构建应用的一个影响就是,应用在设计时需要对服务出错时有一定的容错性.当任意一个服务因为某些原因fail时,需要对用户友好的报错.相比于一体化架构,微服务架构在这方面引入了额外的复杂性.微服务团队需要时时刻刻都考虑服务fail时对用户体验的影响.<br/>
+&nbsp;&nbsp;Netflix的Simian Army可以测试服务fail甚至数据中心fail时,整个应用的可恢复性以及监控是否发挥作用.这种测试一般就可以做到让大家都可以按时下班.由于服务在任何时候都有可能fail,因此快速地探测服务fail,并在可能时自动恢复就特别重要.微服务架构的应用需要投入很多精力在实时应用监控上,不仅检查架构方面实时情况(数据库每秒接收到多少请求),还要检查业务相关情况(例如有每分钟有多少订单).监控系统这样就可以在系统出错前提供预警,并通知开发团队跟进调查.<br/>
+&nbsp;&nbsp;微服务架构中一般需要对每个服务都有一个复杂的监控,并提供一个面板,再次面板上可以查看每个服务的各方面情况.</p>
+
+<h2>参考文献和其他相关链接</h2>
+
+<ul>
+<li>Microservices introduction by Martin Fowler:<a href="http://martinfowler.com/articles/microservices.html">link</a></li>
+<li>关于微服务架构的介绍官网:<a href="http://microservices.io">link</a></li>
+</ul>
+
+]]></content>
+  </entry>
   
 </feed>

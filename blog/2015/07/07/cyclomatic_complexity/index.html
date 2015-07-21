@@ -1,0 +1,263 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Introduction to Cyclomatic Complexity and ABC - Democraci's Tech Blog</title>
+  <meta name="author" content="Democraci">
+
+  
+  <meta name="description" content="&nbsp;&nbsp;Cyclomatic Complexity(CC)和ABC是一些对代码衡量的指标.在这些指标出现之前,人们通常使用LoC(代码行数),方法平均行数等一些粗糙的指标去衡量代码. &nbsp;&nbsp;为什么需要这些指标? 在评价一个程序一个方法好坏复杂时, &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://democraci.github.io/blog/2015/07/07/cyclomatic_complexity/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Democraci's Tech Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Democraci's Tech Blog</a></h1>
+  
+    <h2>合抱之木 生于毫末 九层之台 起于垒土 千里之行 始于足下</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="democraci.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Introduction to Cyclomatic Complexity and ABC</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-07-07T15:59:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>3:59 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&nbsp;&nbsp;Cyclomatic Complexity(CC)和ABC是一些对代码衡量的指标.在这些指标出现之前,人们通常使用LoC(代码行数),方法平均行数等一些粗糙的指标去衡量代码.  <br/>
+&nbsp;&nbsp;为什么需要这些指标? 在评价一个程序一个方法好坏复杂时,最笨得方法是人工检查代码, 获得一个对程序的大致认识.但是使用人工检查太耗费时间对复杂的程序也无能无力, 如果我们能定义一些可以使用机器分析出来的可靠指标,揭示程序特征,那想必是极好的,对于一切都希望有个衡量数字的人,也能带来极大的安全感. <br/>
+&nbsp;&nbsp;事实上,这些指标不是绝对的衡量指数,它们揭示出来的, 是程序的大概特征.如果要在这些指标的指导下查探修改程序中存在的问题,还需要大量的人工介入, 去确定是否真的存在问题真的有必要修改问题.不应该被这些指标驱使着去编程,让自己的程序指标得分高有时是好事, 但就像用代码行数衡量程序员生产率一样,唯指标论则完全脱离了这些发明这些指标的初衷.指标应该是诊断程序的帮助工具, 而不是最终目的.</p>
+
+<h2>Cyclomatic Complexity定义</h2>
+
+<p>&nbsp;&nbsp;Cyclomatic Complexity(CC)是一个衡量程序复杂度的指标,详细的定义可以参见<a href="https://en.wikipedia.org/wiki/Cyclomatic_complexity">维基百科</a>.简单地说, 对于每个方法, 从方法入口(调用), 到方法出口(return返回), 有多条可能执行路径, 这些路径组成一个控制流图,CC就是基于这个图计算的统计指标.对于一个方法,每个statement都是图中的一个点, 如果一个statement可能六成转向另外一个statement, 那么它们之间就会有一条边.   <br/>
+&nbsp;&nbsp;下面使用一个抄袭的例子来讲解一些CC的具体计算, 计算如下Ruby方法的CC:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">cyclomatic_complexity_of_two</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="n">arg</span>        <span class="c1"># Node A</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Foo&quot;</span>  <span class="c1"># Node B</span>
+</span><span class='line'>  <span class="k">else</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Bar&quot;</span>  <span class="c1"># Node C</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>             <span class="c1"># Node D</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&nbsp;&nbsp;对于上面方法, 可能的流程转向有: <code>A -&gt; B, B -&gt; D, A -&gt; C, C -&gt; D, D -&gt; entrypoint</code>, 画出来的控制流图如下:<img src="http://dab1nmslvvntp.cloudfront.net/wp-content/uploads/2012/12/control_flow_graph.png" alt="control_flow_graph" />  <br/>
+&nbsp;&nbsp;依据上图, 有计算公式<code>CC = Edges - Nodes + Endpoints</code>, 计算出的结果就是 5-4 +1 = 2.</p>
+
+<h2>Cyclomatic Complexity指标作用</h2>
+
+<p>&nbsp;&nbsp;从定义上可知,CC揭示了一个方法内部可能的执行路径.CC越高, 说明方法越复杂, 内部可能执行路径越多, 测试起来越困难.如果一个方法内部控制语句比较多的话, 这个时候CC得分相对会高一点,此时要本能的嗅到code smell. 对于多高的CC是不正常, 目前没有明确的标准.</p>
+
+<h2>Ruby中Cyclomatic Complexity的测量</h2>
+
+<p>&nbsp;&nbsp;一般使用Saikuro,官网<a href="http://saikuro.rubyforge.org/">戳此</a>.Saikuro使用BSD License,在计算CC时, 把所有<code>if, unless, while, until, for, elsif, when</code>以及<code>block</code>都当做程序控制流分支.
+&nbsp;&nbsp;Saikuro可以指定CC数值在多少以上时给出Warning和Error, 这俩个基准值如果有相关经验和理论支持,定制可能更符合项目组中实际情况.
+&nbsp;&nbsp;Saikuro目前还是每次人工跑命令获取CC结果, 如果能够和CI集成,在每次代码提交后,计算CC并给与开发者反馈, 则是极好的.</p>
+
+<h2>ABC的定义</h2>
+
+<p>&nbsp;&nbsp;ABC也是一个度量代码复杂度的指标, 虽然这个指标原本发明出来是为了度量软件大小的.ABC的计算涉及到程序中三个方面.
+*  赋值(Assignment, A): 将值赋予给变量, 例如<code>=, /=, +=, &amp;=</code>等
+*  分支(Branch, B): 程序分支, <code>if else switch</code>等等
+*  方法调用(Call,C): 方法调用,将执行流从当前scope转移了.</p>
+
+<p>ABC是上述三个数的平方和的开平方, <code>ABC = sqrt((A*A) + (B*B) + (C*C))</code></p>
+
+<h2>ABC指标作用</h2>
+
+<p>&nbsp;&nbsp;ABC代表了代码复杂度, 一个方法ABC得分越高, 则方法越复杂, 就有可能需要进行refactor.</p>
+
+<h2>Ruby中ABC的测量</h2>
+
+<p>&nbsp;&nbsp;一般使用flog, github地址<a href="https://github.com/seattlerb/flog">戳此</a>. flog的安装和使用都比较简单,它会计算出每个方法的ABC指数,并默认输出ABC指数前60%的方法.
+&nbsp;&nbsp;值得一提的是, flog计算ABC采取的标准非常主观,和标准的ABC定义不太一样, 可以说是为Ruby语言完全定制的ABC定义.flog中把<code>:and, :case, :if, :or, :rescue, :until, :when, :while</code>还有其他语句当做分支(Branch).所有赋值(Assignment)都得一分,方法调用(Call)则是将执行流从当前Scope中转移得方法调用.具体的计算过程可以直接阅读flog源码,大概1000行左右,非常精悍短小.
+&amp;&nbsp;&amp;&nbsp;对于flog中计算出来的方法ABC指数,Jake Scruggs给出了如下经验法则:   <br/>
+*  0-10: 无需做什么, 方法逻辑很简单
+*  11-21: Good
+*  21-40: 可能需要做一些refactor
+*  41-60:需要检查一下方法代码, 看看是否需要做refactor
+*  61-?: 只要有机会, 就应该做refactor</p>
+
+<h2>其它工具</h2>
+
+<p>&nbsp;&nbsp;<a href="http://www.zenspider.com/ZSS/Products/ParseTree/">PareseTree</a>是一个将Ruby方法/类转为Lisp中使用的S-expression,并可计算ABC指数的工具. <br/>
+&nbsp;&nbsp;<a href="http://pmd.sourceforge.net/">PMD</a>是一个探查源代码缺陷的强大工具.它可以查找Java/JavaScript/PLSQL/XML/XSL中的常见编程错误, 也可以用来探查Java/C/C++/PHP/Ruby/JavaScript/Scala/Go中的重复代码.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Democraci</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-07-07T15:59:00+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>3:59 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://democraci.github.io/blog/2015/07/07/cyclomatic_complexity/" data-via="" data-counturl="http://democraci.github.io/blog/2015/07/07/cyclomatic_complexity/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/07/07/java_memory_model/" title="Previous Post: Java内存模型">&laquo; Java内存模型</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/07/07/cyclomatic_complexity/">Introduction to Cyclomatic Complexity and ABC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/07/java_memory_model/">Java内存模型</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/07/api_best_practice/">Web Service API最佳实践</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/07/07/README/">Readme</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2011/07/10/ruby_style_guide_interprete/">Ruby代码规范</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - Democraci -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
