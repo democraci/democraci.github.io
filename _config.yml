@@ -3,11 +3,11 @@
 # ----------------------- #
 
 url: http://democraci.github.io
-title: My Octopress Blog
-subtitle: A blogging framework for hackers.
-author: Your Name
+title: Democraci's Tech Blog
+subtitle: 合抱之木 生于毫末 九层之台 起于垒土 千里之行 始于足下
+author: Democraci
 simple_search: https://www.google.com/search
-description:
+description: 
 
 # Default date format is "ordinal" (resulting in "July 22nd 2007")
 # You can customize the format as defined in
